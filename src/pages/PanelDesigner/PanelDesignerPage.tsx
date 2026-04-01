@@ -1,0 +1,731 @@
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Tabs,
+  Tab,
+  IconButton,
+  Badge,
+  Tooltip,
+  Divider,
+  TextField,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DescriptionIcon from '@mui/icons-material/Description';
+import FileCopyIcon from '@mui/icons-material/FileCopy';
+import GroupIcon from '@mui/icons-material/Group';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import {
+  PageHeader,
+  Button,
+  Loading,
+  ItemTypeZone,
+  getZoneConfig,
+  MaterialSelectionModal,
+  EntityStatusBadge,
+  StatusChangeDropdown,
+  ConfirmDialog,
+  CollaboratorModal,
+} from '../../components';
+import { useAuth } from '../../contexts';
+import {
+  useProject,
+  usePanel,
+  useGroupedPanelItems,
+  useMaterials,
+  useCategories,
+  useBrands,
+  useAddMaterialToPanel,
+  useUpdatePanelItem,
+  useDeletePanelItem,
+  useCreatePanel,
+  useUpdatePanel,
+  useDeletePanel,
+  useDuplicatePanel,
+  useChangePanelStatus,
+  useAddPanelCollaborator,
+  useRemovePanelCollaborator,
+  useUsers,
+} from '../../hooks';
+import {
+  PanelItem,
+  PanelItemType,
+  Material,
+  ZoneType,
+} from '../../types';
+import { panelService } from '../../services';
+import toast from 'react-hot-toast';
+
+export const PanelDesignerPage: React.FC = () => {
+  const { id: projectId, panelId: panelIdStr } = useParams<{ id: string; panelId: string }>();
+  const navigate = useNavigate();
+  const parsedProjectId = parseInt(projectId || '0');
+  const parsedPanelId = parseInt(panelIdStr || '0');
+
+  const [selectedPanelId, setSelectedPanelId] = useState(parsedPanelId);
+  
+  // Material selection modal state
+  const [selectionModalOpen, setSelectionModalOpen] = useState(false);
+  const [activeZone, setActiveZone] = useState<ZoneType | null>(null);
+
+  // Data fetching
+  const { data: project, isLoading: projectLoading } = useProject(parsedProjectId);
+  const { data: panelDetail, isLoading: panelLoading } = usePanel(selectedPanelId);
+  const { data: groupedItems, refetch: refetchItems } = useGroupedPanelItems(selectedPanelId);
+  const { data: materials } = useMaterials();
+  const { data: categories } = useCategories();
+  const { data: brands } = useBrands();
+
+  // Mutations
+  const addMaterialMutation = useAddMaterialToPanel();
+  const updateItemMutation = useUpdatePanelItem();
+  const deleteItemMutation = useDeletePanelItem();
+  const createPanelMutation = useCreatePanel();
+  const updatePanelMutation = useUpdatePanel();
+  const deletePanelMutation = useDeletePanel();
+  const duplicatePanelMutation = useDuplicatePanel();
+  const changePanelStatusMutation = useChangePanelStatus();
+  const addPanelCollaboratorMutation = useAddPanelCollaborator();
+  const removePanelCollaboratorMutation = useRemovePanelCollaborator();
+  const { data: allUsers } = useUsers();
+  const { user, hasRole, hasPermission } = useAuth();
+
+  // UI states for new features
+  const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
+
+  // Panel name editing state
+  const [editingPanelId, setEditingPanelId] = useState<number | null>(null);
+  const [editingPanelName, setEditingPanelName] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  // Mouse drag scrolling for panel tabs
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const container = tabsContainerRef.current?.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!container) return;
+    isDragging.current = true;
+    startX.current = e.pageX - container.offsetLeft;
+    scrollLeft.current = container.scrollLeft;
+    container.style.cursor = 'grabbing';
+    container.style.userSelect = 'none';
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    const container = tabsContainerRef.current?.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!container) return;
+    e.preventDefault();
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startX.current) * 1.5; // scroll speed multiplier
+    container.scrollLeft = scrollLeft.current - walk;
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    const container = tabsContainerRef.current?.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (container) {
+      container.style.cursor = 'grab';
+      container.style.userSelect = '';
+    }
+  }, []);
+
+  useEffect(() => {
+    // Set initial grab cursor on mount
+    const container = tabsContainerRef.current?.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (container) {
+      container.style.cursor = 'grab';
+    }
+    // Cleanup: handle mouseup outside the container
+    const handleGlobalMouseUp = () => {
+      if (isDragging.current) handleMouseUp();
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [handleMouseUp]);
+
+  const handleStartEditPanelName = (panelId: number, panelName: string) => {
+    setEditingPanelId(panelId);
+    setEditingPanelName(panelName);
+    setTimeout(() => editInputRef.current?.focus(), 50);
+  };
+
+  const handleSavePanelName = async () => {
+    if (!editingPanelId || !editingPanelName.trim()) {
+      setEditingPanelId(null);
+      return;
+    }
+    try {
+      await updatePanelMutation.mutateAsync({
+        id: editingPanelId,
+        data: {
+          panelName: editingPanelName.trim(),
+          margin: panelDetail?.margin ?? 20,
+        },
+      });
+      toast.success('Panel name updated');
+    } catch {
+      toast.error('Failed to update panel name');
+    }
+    setEditingPanelId(null);
+  };
+
+  const canChangeStatus =
+    hasPermission('Panels.ChangeStatus') ||
+    hasRole('SuperAdmin') ||
+    hasRole('TenderingManager') ||
+    panelDetail?.createdByUserId === user?.id;
+
+  const canManageCollaborators =
+    hasPermission('Panels.ManageCollaborators') ||
+    hasRole('SuperAdmin') || hasRole('TenderingManager');
+
+  const canDuplicate = hasPermission('Panels.Duplicate') || hasRole('SuperAdmin') || hasRole('TenderingManager');
+  const canDelete = hasPermission('Panels.Delete') || hasRole('SuperAdmin') || hasRole('TenderingManager') || panelDetail?.createdByUserId === user?.id;
+  const canCreatePanel = hasPermission('Panels.Create') || hasRole('SuperAdmin') || hasRole('TenderingManager');
+  const canEditPanel = hasPermission('Panels.Edit') || hasRole('SuperAdmin') || hasRole('TenderingManager') || panelDetail?.createdByUserId === user?.id;
+  const canExport = hasPermission('Offers.Export') || hasRole('SuperAdmin') || hasRole('TenderingManager');
+  const canGenerateOffer = hasPermission('Offers.Generate') || hasRole('SuperAdmin') || hasRole('TenderingManager');
+  const canModifyPricing = hasPermission('Pricing.Modify') || hasRole('SuperAdmin') || hasRole('TenderingManager');
+
+  // Add new panel handler
+  const handleAddPanel = async () => {
+    if (!project) return;
+    try {
+      const panelNumber = (project.panels?.length || 0) + 1;
+      const newPanel = await createPanelMutation.mutateAsync({
+        projectId: parsedProjectId,
+        panelName: `Panel ${panelNumber}`,
+        margin: 20,
+      });
+      toast.success('Panel added successfully');
+      if (newPanel?.panelId) {
+        setSelectedPanelId(newPanel.panelId);
+      }
+    } catch (error) {
+      toast.error('Failed to add panel');
+    }
+  };
+
+  // Currency formatter
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-EG', { style: 'currency', currency: project?.currency || 'EGP' }).format(value);
+
+  // Zone configuration map
+  type ActiveZoneType = 'incoming' | 'outgoing' | 'enclosure' | 'busbarAndCables';
+  const zoneToItemType: Record<ActiveZoneType, PanelItemType> = {
+    incoming: PanelItemType.Incoming,
+    outgoing: PanelItemType.Outgoing,
+    enclosure: PanelItemType.Enclosure,
+    busbarAndCables: PanelItemType.BusbarAndCables,
+  };
+
+  // Get items grouped by zone
+  const zones = useMemo(() => {
+    if (groupedItems) {
+      return groupedItems as Record<string, PanelItem[]>;
+    }
+    return {
+      incoming: [] as PanelItem[],
+      outgoing: [] as PanelItem[],
+      enclosure: [] as PanelItem[],
+      busbarAndCables: [] as PanelItem[],
+    };
+  }, [groupedItems]);
+
+  // Open material selection modal for a specific zone
+  const handleOpenAddItems = (zone: ZoneType) => {
+    setActiveZone(zone);
+    setSelectionModalOpen(true);
+  };
+
+  // Add selected materials to the active zone
+  const handleAddMaterials = async (
+    selections: { material: Material; quantity: number }[]
+  ) => {
+    if (!activeZone) return;
+    const itemType = activeZone !== 'unassigned' ? zoneToItemType[activeZone as ActiveZoneType] : undefined;
+
+    try {
+      for (const { material, quantity } of selections) {
+        await addMaterialMutation.mutateAsync({
+          panelId: selectedPanelId,
+          materialId: material.materialId,
+          quantity,
+          itemType: itemType ?? undefined,
+        });
+      }
+      toast.success(
+        `Added ${selections.length} material${selections.length !== 1 ? 's' : ''} to ${getZoneConfig(activeZone).label}`
+      );
+      refetchItems();
+    } catch (error) {
+      toast.error('Failed to add materials');
+    }
+  };
+
+  // Remove item from panel
+  const handleRemoveItem = async (itemId: number) => {
+    try {
+      await deleteItemMutation.mutateAsync(itemId);
+      toast.success('Item removed');
+      refetchItems();
+    } catch (error) {
+      toast.error('Failed to remove item');
+    }
+  };
+
+  // Update quantity
+  const handleQuantityChange = async (itemId: number, quantity: number) => {
+    try {
+      const allItems = Object.values(zones).flat();
+      const currentItem = allItems.find((i) => i.panelItemId === itemId);
+      await updateItemMutation.mutateAsync({
+        id: itemId,
+        data: {
+          quantity,
+          itemType: currentItem?.itemType ?? undefined,
+        },
+      });
+      refetchItems();
+    } catch (error) {
+      toast.error('Failed to update quantity');
+    }
+  };
+
+  // Update pricing overrides
+  const handleOverrideChange = async (
+    itemId: number,
+    updates: { overrideDiscount?: number; overrideMargin?: number; extraDiscount?: number }
+  ) => {
+    try {
+      // Find the current item to preserve its quantity and itemType
+      const allItems = Object.values(zones).flat();
+      const currentItem = allItems.find((i) => i.panelItemId === itemId);
+      await updateItemMutation.mutateAsync({
+        id: itemId,
+        data: {
+          quantity: currentItem?.quantity ?? 1,
+          itemType: currentItem?.itemType ?? undefined,
+          ...updates,
+        },
+      });
+      refetchItems();
+      toast.success('Pricing updated');
+    } catch {
+      toast.error('Failed to update pricing');
+    }
+  };
+
+  if (projectLoading || panelLoading) {
+    return <Loading fullScreen message="Loading panel designer..." />;
+  }
+
+  if (!project) {
+    return (
+      <Box sx={{ textAlign: 'center', py: 8 }}>
+        <Typography variant="h6" color="error">
+          Project not found
+        </Typography>
+        <Button variant="ghost" onClick={() => navigate('/projects')} sx={{ mt: 2 }}>
+          Back to Projects
+        </Button>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <PageHeader
+        title="Panel Designer"
+        subtitle={`${project.projectName} - ${panelDetail?.panelName || 'Select a panel'}`}
+        breadcrumbs={[
+          { label: 'Projects', path: '/projects' },
+          { label: project.projectName, path: `/projects/${project.projectId}` },
+          { label: 'Panel Designer' },
+        ]}
+        backButton={{ label: 'Back' }}
+        actions={
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {canExport && (
+              <Button
+                variant="outline"
+                icon={<FileDownloadIcon />}
+                onClick={async () => {
+                  try {
+                    const blob = await panelService.exportToExcel(selectedPanelId);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${panelDetail?.panelName || 'panel'}.xlsx`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast.success('Panel exported');
+                  } catch {
+                    toast.error('Export failed');
+                  }
+                }}
+                disabled={!selectedPanelId}
+              >
+                Export Panel
+              </Button>
+            )}
+            {canGenerateOffer && (
+              <Button
+                variant="primary"
+                icon={<DescriptionIcon />}
+                onClick={() => navigate(`/projects/${project.projectId}/offer`)}
+              >
+                Generate Offer
+              </Button>
+            )}
+          </Box>
+        }
+      />
+
+      {/* Panel Selection Tabs */}
+      <Paper
+        sx={{ mb: { xs: 2, sm: 3 }, display: 'flex', alignItems: 'center' }}
+        ref={tabsContainerRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
+      >
+        <Tabs
+          value={selectedPanelId}
+          onChange={(_, value) => setSelectedPanelId(value)}
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            flex: 1,
+            '& .MuiTabs-scroller': {
+              cursor: 'grab',
+              scrollBehavior: 'smooth',
+            },
+            '& .MuiTab-root': {
+              minWidth: { xs: 80, sm: 'auto' },
+              px: { xs: 1.5, sm: 2 },
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            },
+          }}
+        >
+          {project.panels?.map((panel) => (
+            <Tab
+              key={panel.panelId}
+              value={panel.panelId}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  {editingPanelId === panel.panelId ? (
+                    <TextField
+                      inputRef={editInputRef}
+                      size="small"
+                      value={editingPanelName}
+                      onChange={(e) => setEditingPanelName(e.target.value)}
+                      onBlur={handleSavePanelName}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSavePanelName();
+                        if (e.key === 'Escape') setEditingPanelId(null);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      sx={{ width: 120, '& .MuiInputBase-input': { py: 0.25, px: 0.5, fontSize: '0.875rem' } }}
+                      autoFocus
+                    />
+                  ) : (
+                    <Box
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEditPanelName(panel.panelId, panel.panelName);
+                      }}
+                    >
+                      {panel.panelName}
+                    </Box>
+                  )}
+                  {panel.status != null && (
+                    <EntityStatusBadge status={panel.status} size="small" />
+                  )}
+                </Box>
+              }
+            />
+          ))}
+        </Tabs>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, px: 1 }}>
+          {canDelete && selectedPanelId > 0 && (
+            <Tooltip title="Delete Panel">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={deletePanelMutation.isPending}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canDuplicate && selectedPanelId > 0 && (
+            <Tooltip title="Duplicate Panel">
+              <IconButton
+                size="small"
+                color="secondary"
+                onClick={() => setDuplicateConfirmOpen(true)}
+                disabled={duplicatePanelMutation.isPending}
+              >
+                <FileCopyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canManageCollaborators && selectedPanelId > 0 && (
+            <Tooltip title="Manage Collaborators">
+              <IconButton
+                size="small"
+                color="default"
+                onClick={() => setIsCollaboratorModalOpen(true)}
+              >
+                <Badge badgeContent={panelDetail?.collaborators?.length || 0} color="primary" max={9}>
+                  <GroupIcon fontSize="small" />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+          )}
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={handleAddPanel}
+            disabled={createPanelMutation.isPending || !canCreatePanel}
+            sx={{
+              border: '1px dashed',
+              borderColor: 'primary.main',
+              borderRadius: 1,
+              my: 0.5,
+              display: canCreatePanel ? 'inline-flex' : 'none',
+              '&:hover': { backgroundColor: 'primary.light' },
+            }}
+          >
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Paper>
+
+      {/* Panel Status Change (if panel selected) */}
+      {selectedPanelId > 0 && panelDetail && canChangeStatus && (
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            Panel Status:
+          </Typography>
+          <StatusChangeDropdown
+            currentStatus={panelDetail.status}
+            onStatusChange={async (newStatus) => {
+              try {
+                await changePanelStatusMutation.mutateAsync({
+                  id: selectedPanelId,
+                  dto: { newStatus },
+                });
+                toast.success('Panel status updated');
+              } catch {
+                toast.error('Failed to update panel status');
+              }
+            }}
+            loading={changePanelStatusMutation.isPending}
+          />
+        </Box>
+      )}
+
+      {/* Panel Pricing Summary */}
+      {selectedPanelId > 0 && panelDetail && (
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Panel Summary
+          </Typography>
+          <Divider sx={{ mb: 1.5 }} />
+          <Grid container spacing={2}>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Items</Typography>
+              <Typography variant="h6" fontWeight={600}>
+                {panelDetail.summary?.totalItems ?? panelDetail.items?.length ?? 0}
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Total Cost</Typography>
+              <Typography variant="h6" fontWeight={600} sx={{ fontFamily: 'Roboto Mono' }}>
+                {formatCurrency(panelDetail.summary?.totalCost ?? 0)}
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Margin ({panelDetail.margin ?? 0}%)</Typography>
+              <Typography variant="h6" fontWeight={600} color="success.main" sx={{ fontFamily: 'Roboto Mono' }}>
+                {formatCurrency(panelDetail.summary?.marginAmount ?? 0)}
+              </Typography>
+            </Grid>
+            <Grid item xs={6} sm={3}>
+              <Typography variant="caption" color="text.secondary">Total Price</Typography>
+              <Typography variant="h6" fontWeight={600} color="primary.main" sx={{ fontFamily: 'Roboto Mono' }}>
+                {formatCurrency(panelDetail.summary?.totalPrice ?? 0)}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Paper>
+      )}
+
+{/* Item Type Zones */}
+      {selectedPanelId > 0 && (
+        <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
+          {/* Category Zones */}
+          <Grid item xs={12} md={6}>
+            <ItemTypeZone
+              id="incoming"
+              label={getZoneConfig('incoming').label}
+              items={zones.incoming}
+              color={getZoneConfig('incoming').color}
+              description={getZoneConfig('incoming').description}
+              onRemove={canEditPanel ? handleRemoveItem : undefined}
+              onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onAddItems={canEditPanel ? () => handleOpenAddItems('incoming') : undefined}
+              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <ItemTypeZone
+              id="outgoing"
+              label={getZoneConfig('outgoing').label}
+              items={zones.outgoing}
+              color={getZoneConfig('outgoing').color}
+              description={getZoneConfig('outgoing').description}
+              onRemove={canEditPanel ? handleRemoveItem : undefined}
+              onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onAddItems={canEditPanel ? () => handleOpenAddItems('outgoing') : undefined}
+              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <ItemTypeZone
+              id="enclosure"
+              label={getZoneConfig('enclosure').label}
+              items={zones.enclosure}
+              color={getZoneConfig('enclosure').color}
+              description={getZoneConfig('enclosure').description}
+              onRemove={canEditPanel ? handleRemoveItem : undefined}
+              onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onAddItems={canEditPanel ? () => handleOpenAddItems('enclosure') : undefined}
+              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+            />
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <ItemTypeZone
+              id="busbarAndCables"
+              label={getZoneConfig('busbarAndCables').label}
+              items={zones.busbarAndCables}
+              color={getZoneConfig('busbarAndCables').color}
+              description={getZoneConfig('busbarAndCables').description}
+              onRemove={canEditPanel ? handleRemoveItem : undefined}
+              onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onAddItems={canEditPanel ? () => handleOpenAddItems('busbarAndCables') : undefined}
+              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+            />
+          </Grid>
+        </Grid>
+      )}
+
+      {/* Material Selection Modal */}
+      {activeZone && (
+        <MaterialSelectionModal
+          open={selectionModalOpen}
+          onClose={() => {
+            setSelectionModalOpen(false);
+            setActiveZone(null);
+          }}
+          title={`Add Items to ${getZoneConfig(activeZone).label}`}
+          zoneColor={getZoneConfig(activeZone).color}
+          materials={materials || []}
+          categories={categories || []}
+          brands={brands || []}
+          onAddMaterials={handleAddMaterials}
+          loading={addMaterialMutation.isPending}
+        />
+      )}
+
+      {/* Delete Panel Confirmation */}
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Delete Panel"
+        message={`Are you sure you want to delete "${panelDetail?.panelName || ''}"? This will remove all items in this panel.`}
+        confirmText="Delete"
+        confirmColor="error"
+        onConfirm={async () => {
+          try {
+            await deletePanelMutation.mutateAsync(selectedPanelId);
+            toast.success('Panel deleted successfully');
+            setDeleteConfirmOpen(false);
+            // Select the first remaining panel, or 0 if none left
+            const remainingPanels = project.panels?.filter(
+              (p) => p.panelId !== selectedPanelId
+            );
+            if (remainingPanels && remainingPanels.length > 0) {
+              setSelectedPanelId(remainingPanels[0].panelId);
+            } else {
+              setSelectedPanelId(0);
+            }
+          } catch {
+            toast.error('Failed to delete panel');
+          }
+        }}
+        onCancel={() => setDeleteConfirmOpen(false)}
+        loading={deletePanelMutation.isPending}
+      />
+
+      {/* Duplicate Panel Confirmation */}
+      <ConfirmDialog
+        open={duplicateConfirmOpen}
+        title="Duplicate Panel"
+        message={`Duplicate "${panelDetail?.panelName || ''}"? This will copy all materials and quantities.`}
+        confirmText="Duplicate"
+        confirmColor="primary"
+        onConfirm={async () => {
+          try {
+            const newPanel = await duplicatePanelMutation.mutateAsync(selectedPanelId);
+            toast.success('Panel duplicated successfully');
+            setDuplicateConfirmOpen(false);
+            if (newPanel?.panelId) {
+              setSelectedPanelId(newPanel.panelId);
+            }
+          } catch {
+            toast.error('Failed to duplicate panel');
+          }
+        }}
+        onCancel={() => setDuplicateConfirmOpen(false)}
+        loading={duplicatePanelMutation.isPending}
+      />
+
+      {/* Panel Collaborator Modal */}
+      {panelDetail && (
+        <CollaboratorModal
+          open={isCollaboratorModalOpen}
+          onClose={() => setIsCollaboratorModalOpen(false)}
+          title={`Collaborators for "${panelDetail.panelName}"`}
+          collaborators={panelDetail.collaborators || []}
+          users={allUsers || []}
+          onAdd={async (dto) => {
+            await addPanelCollaboratorMutation.mutateAsync({ panelId: selectedPanelId, dto });
+            toast.success('Collaborator added');
+          }}
+          onRemove={async (userId) => {
+            await removePanelCollaboratorMutation.mutateAsync({ panelId: selectedPanelId, userId });
+            toast.success('Collaborator removed');
+          }}
+          loading={addPanelCollaboratorMutation.isPending || removePanelCollaboratorMutation.isPending}
+        />
+      )}
+    </Box>
+  );
+};
+
+export default PanelDesignerPage;
