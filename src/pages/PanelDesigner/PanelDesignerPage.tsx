@@ -12,7 +12,9 @@ import {
   Tooltip,
   Divider,
   TextField,
+  Alert,
 } from '@mui/material';
+import LockIcon from '@mui/icons-material/Lock';
 import AddIcon from '@mui/icons-material/Add';
 import DescriptionIcon from '@mui/icons-material/Description';
 import FileCopyIcon from '@mui/icons-material/FileCopy';
@@ -50,6 +52,7 @@ import {
   useAddPanelCollaborator,
   useRemovePanelCollaborator,
   useUsers,
+  useProjectLockGuard,
 } from '../../hooks';
 import {
   PanelItem,
@@ -160,6 +163,11 @@ export const PanelDesignerPage: React.FC = () => {
   };
 
   const handleSavePanelName = async () => {
+    if (!ensurePanelUnlocked()) {
+      setEditingPanelId(null);
+      return;
+    }
+
     if (!editingPanelId || !editingPanelName.trim()) {
       setEditingPanelId(null);
       return;
@@ -196,10 +204,15 @@ export const PanelDesignerPage: React.FC = () => {
   const canExport = hasPermission('Offers.Export') || hasRole('SuperAdmin') || hasRole('TenderingManager');
   const canGenerateOffer = hasPermission('Offers.Generate') || hasRole('SuperAdmin') || hasRole('TenderingManager');
   const canModifyPricing = hasPermission('Pricing.Modify') || hasRole('SuperAdmin') || hasRole('TenderingManager');
+  const { isProjectLocked, ensurePanelUnlocked } = useProjectLockGuard(project?.isLocked);
 
   // Add new panel handler
   const handleAddPanel = async () => {
     if (!project) return;
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     try {
       const panelNumber = (project.panels?.length || 0) + 1;
       const newPanel = await createPanelMutation.mutateAsync({
@@ -244,6 +257,10 @@ export const PanelDesignerPage: React.FC = () => {
 
   // Open material selection modal for a specific zone
   const handleOpenAddItems = (zone: ZoneType) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     setActiveZone(zone);
     setSelectionModalOpen(true);
   };
@@ -253,6 +270,10 @@ export const PanelDesignerPage: React.FC = () => {
     selections: { material: Material; quantity: number }[]
   ) => {
     if (!activeZone) return;
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     const itemType = activeZone !== 'unassigned' ? zoneToItemType[activeZone as ActiveZoneType] : undefined;
 
     try {
@@ -275,6 +296,10 @@ export const PanelDesignerPage: React.FC = () => {
 
   // Remove item from panel
   const handleRemoveItem = async (itemId: number) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     try {
       await deleteItemMutation.mutateAsync(itemId);
       toast.success('Item removed');
@@ -286,6 +311,10 @@ export const PanelDesignerPage: React.FC = () => {
 
   // Update quantity
   const handleQuantityChange = async (itemId: number, quantity: number) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     try {
       const allItems = Object.values(zones).flat();
       const currentItem = allItems.find((i) => i.panelItemId === itemId);
@@ -307,6 +336,10 @@ export const PanelDesignerPage: React.FC = () => {
     itemId: number,
     updates: { overrideDiscount?: number; overrideMargin?: number; extraDiscount?: number }
   ) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     try {
       // Find the current item to preserve its quantity and itemType
       const allItems = Object.values(zones).flat();
@@ -392,6 +425,16 @@ export const PanelDesignerPage: React.FC = () => {
         }
       />
 
+      {isProjectLocked && (
+        <Alert
+          severity="warning"
+          icon={<LockIcon fontSize="inherit" />}
+          sx={{ mb: 2 }}
+        >
+          This project is locked. Panel and panel item editing actions are disabled.
+        </Alert>
+      )}
+
       {/* Panel Selection Tabs */}
       <Paper
         sx={{ mb: { xs: 2, sm: 3 }, display: 'flex', alignItems: 'center' }}
@@ -444,6 +487,7 @@ export const PanelDesignerPage: React.FC = () => {
                     <Box
                       sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
                       onDoubleClick={(e) => {
+                        if (isProjectLocked) return;
                         e.stopPropagation();
                         handleStartEditPanelName(panel.panelId, panel.panelName);
                       }}
@@ -466,7 +510,7 @@ export const PanelDesignerPage: React.FC = () => {
                 size="small"
                 color="error"
                 onClick={() => setDeleteConfirmOpen(true)}
-                disabled={deletePanelMutation.isPending}
+                disabled={deletePanelMutation.isPending || isProjectLocked}
               >
                 <DeleteIcon fontSize="small" />
               </IconButton>
@@ -478,7 +522,7 @@ export const PanelDesignerPage: React.FC = () => {
                 size="small"
                 color="secondary"
                 onClick={() => setDuplicateConfirmOpen(true)}
-                disabled={duplicatePanelMutation.isPending}
+                disabled={duplicatePanelMutation.isPending || isProjectLocked}
               >
                 <FileCopyIcon fontSize="small" />
               </IconButton>
@@ -490,6 +534,7 @@ export const PanelDesignerPage: React.FC = () => {
                 size="small"
                 color="default"
                 onClick={() => setIsCollaboratorModalOpen(true)}
+                disabled={isProjectLocked}
               >
                 <Badge badgeContent={panelDetail?.collaborators?.length || 0} color="primary" max={9}>
                   <GroupIcon fontSize="small" />
@@ -501,7 +546,7 @@ export const PanelDesignerPage: React.FC = () => {
             size="small"
             color="primary"
             onClick={handleAddPanel}
-            disabled={createPanelMutation.isPending || !canCreatePanel}
+            disabled={createPanelMutation.isPending || !canCreatePanel || isProjectLocked}
             sx={{
               border: '1px dashed',
               borderColor: 'primary.main',
@@ -525,6 +570,10 @@ export const PanelDesignerPage: React.FC = () => {
           <StatusChangeDropdown
             currentStatus={panelDetail.status}
             onStatusChange={async (newStatus) => {
+              if (!ensurePanelUnlocked()) {
+                return;
+              }
+
               try {
                 await changePanelStatusMutation.mutateAsync({
                   id: selectedPanelId,
@@ -535,6 +584,7 @@ export const PanelDesignerPage: React.FC = () => {
                 toast.error('Failed to update panel status');
               }
             }}
+            disabled={isProjectLocked}
             loading={changePanelStatusMutation.isPending}
           />
         </Box>
@@ -589,8 +639,8 @@ export const PanelDesignerPage: React.FC = () => {
               description={getZoneConfig('incoming').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
-              onAddItems={canEditPanel ? () => handleOpenAddItems('incoming') : undefined}
-              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+              onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('incoming') : undefined}
+              onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -602,8 +652,8 @@ export const PanelDesignerPage: React.FC = () => {
               description={getZoneConfig('outgoing').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
-              onAddItems={canEditPanel ? () => handleOpenAddItems('outgoing') : undefined}
-              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+              onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('outgoing') : undefined}
+              onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -615,8 +665,8 @@ export const PanelDesignerPage: React.FC = () => {
               description={getZoneConfig('enclosure').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
-              onAddItems={canEditPanel ? () => handleOpenAddItems('enclosure') : undefined}
-              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+              onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('enclosure') : undefined}
+              onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
           </Grid>
           <Grid item xs={12} md={6}>
@@ -628,8 +678,8 @@ export const PanelDesignerPage: React.FC = () => {
               description={getZoneConfig('busbarAndCables').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
-              onAddItems={canEditPanel ? () => handleOpenAddItems('busbarAndCables') : undefined}
-              onOverrideChange={canModifyPricing ? handleOverrideChange : undefined}
+              onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('busbarAndCables') : undefined}
+              onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
           </Grid>
         </Grid>
@@ -661,6 +711,10 @@ export const PanelDesignerPage: React.FC = () => {
         confirmText="Delete"
         confirmColor="error"
         onConfirm={async () => {
+          if (!ensurePanelUnlocked()) {
+            return;
+          }
+
           try {
             await deletePanelMutation.mutateAsync(selectedPanelId);
             toast.success('Panel deleted successfully');
@@ -690,6 +744,10 @@ export const PanelDesignerPage: React.FC = () => {
         confirmText="Duplicate"
         confirmColor="primary"
         onConfirm={async () => {
+          if (!ensurePanelUnlocked()) {
+            return;
+          }
+
           try {
             const newPanel = await duplicatePanelMutation.mutateAsync(selectedPanelId);
             toast.success('Panel duplicated successfully');
@@ -714,10 +772,16 @@ export const PanelDesignerPage: React.FC = () => {
           collaborators={panelDetail.collaborators || []}
           users={allUsers || []}
           onAdd={async (dto) => {
+            if (!ensurePanelUnlocked()) {
+              return;
+            }
             await addPanelCollaboratorMutation.mutateAsync({ panelId: selectedPanelId, dto });
             toast.success('Collaborator added');
           }}
           onRemove={async (userId) => {
+            if (!ensurePanelUnlocked()) {
+              return;
+            }
             await removePanelCollaboratorMutation.mutateAsync({ panelId: selectedPanelId, userId });
             toast.success('Collaborator removed');
           }}

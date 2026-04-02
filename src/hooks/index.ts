@@ -8,3 +8,4 @@ export * from './usePermissions';
 export * from './useAuditLogs';
 export * from './useDashboard';
 export * from './useOfferData';
+export * from './useProjectLockGuard';

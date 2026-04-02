@@ -5,12 +5,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DescriptionIcon from '@mui/icons-material/Description';
 import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import ListAltIcon from '@mui/icons-material/ListAlt';
 import {
   PageHeader,
   Button,
@@ -35,9 +32,9 @@ import {
   useUnlockProject,
   useCloneProject,
   useUsers,
+  useProjectLockGuard,
 } from '../../hooks';
 import { EntityStatus } from '../../types';
-import { projectService } from '../../services/projectService';
 import { panelService } from '../../services/panelService';
 import toast from 'react-hot-toast';
 
@@ -45,7 +42,7 @@ export const ProjectDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const projectId = parseInt(id || '0');
-  const { user, hasRole } = useAuth();
+  const { user, hasRole, hasPermission } = useAuth();
 
   const { data: project, isLoading, error } = useProject(projectId);
   const { data: totalPriceData } = useProjectTotalPrice(projectId);
@@ -63,7 +60,6 @@ export const ProjectDetailPage: React.FC = () => {
   const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
   const [duplicatePanelId, setDuplicatePanelId] = useState<number | null>(null);
   const [deletePanelId, setDeletePanelId] = useState<number | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
   const [showCloneConfirm, setShowCloneConfirm] = useState(false);
 
   const canChangeStatus =
@@ -71,8 +67,16 @@ export const ProjectDetailPage: React.FC = () => {
     hasRole('TenderingManager') ||
     project?.createdByUserId === user?.id;
 
+  const canLockUnlock = hasPermission('Projects.Lock') || hasRole('SuperAdmin');
+
   const canManageCollaborators =
     hasRole('SuperAdmin') || hasRole('TenderingManager');
+
+  const {
+    isProjectLocked,
+    ensureProjectUnlocked,
+    ensurePanelUnlocked,
+  } = useProjectLockGuard(project?.isLocked);
 
   if (isLoading) {
     return <Loading fullScreen message="Loading project..." />;
@@ -92,6 +96,10 @@ export const ProjectDetailPage: React.FC = () => {
   }
 
   const handleAddPanel = async () => {
+    if (!ensureProjectUnlocked()) {
+      return;
+    }
+
     try {
       const panelNumber = (project.panels?.length || 0) + 1;
       const newPanel = await createPanelMutation.mutateAsync({
@@ -109,6 +117,10 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const handleStatusChange = async (newStatus: EntityStatus) => {
+    if (!ensureProjectUnlocked()) {
+      return;
+    }
+
     try {
       await changeStatusMutation.mutateAsync({ id: projectId, dto: { newStatus } });
       toast.success('Status updated');
@@ -119,6 +131,10 @@ export const ProjectDetailPage: React.FC = () => {
 
   const handleDuplicatePanel = async () => {
     if (!duplicatePanelId) return;
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     try {
       const newPanel = await duplicatePanelMutation.mutateAsync(duplicatePanelId);
       toast.success('Panel duplicated successfully');
@@ -133,112 +149,16 @@ export const ProjectDetailPage: React.FC = () => {
 
   const handleDeletePanel = async () => {
     if (!deletePanelId) return;
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
     try {
       await deletePanelMutation.mutateAsync(deletePanelId);
       toast.success('Panel deleted');
       setDeletePanelId(null);
     } catch {
       toast.error('Failed to delete panel');
-    }
-  };
-
-  const handleExportProject = async () => {
-    setIsExporting(true);
-    try {
-      const blob = await projectService.exportToExcel(projectId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${project?.projectName || 'project'}-export.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Project exported successfully');
-    } catch {
-      toast.error('Failed to export project');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportMaterialList = async () => {
-    setIsExporting(true);
-    try {
-      const blob = await projectService.exportMaterialList(projectId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${project?.projectName || 'project'}-material-list.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Material list exported');
-    } catch {
-      toast.error('Failed to export material list');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportTechnicalOfferPdf = async () => {
-    setIsExporting(true);
-    try {
-      const blob = await projectService.exportTechnicalOfferPdf(projectId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${project?.projectName || 'project'}-technical-offer.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Technical offer PDF downloaded');
-    } catch {
-      toast.error('Failed to download technical offer PDF');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportCommercialOfferPdf = async () => {
-    setIsExporting(true);
-    try {
-      const blob = await projectService.exportCommercialOfferPdf(projectId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${project?.projectName || 'project'}-commercial-offer.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Commercial offer PDF downloaded');
-    } catch {
-      toast.error('Failed to download commercial offer PDF');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const handleExportOfferExcel = async () => {
-    setIsExporting(true);
-    try {
-      const blob = await projectService.exportOffer(projectId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${project?.projectName || 'project'}-offer.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      toast.success('Offer Excel exported');
-    } catch {
-      toast.error('Failed to export offer');
-    } finally {
-      setIsExporting(false);
     }
   };
 
@@ -261,6 +181,10 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const handleCloneProject = async () => {
+    if (!ensureProjectUnlocked()) {
+      return;
+    }
+
     try {
       const cloned = await cloneProjectMutation.mutateAsync(projectId);
       toast.success('Project cloned successfully');
@@ -272,6 +196,10 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const handleAddCollaborator = async (dto: { userId: string; roleInProject?: string }) => {
+    if (!ensureProjectUnlocked()) {
+      return;
+    }
+
     await addCollaboratorMutation.mutateAsync({ projectId, dto });
     // Also add collaborator to all existing panels in this project
     if (project?.panels?.length) {
@@ -286,6 +214,10 @@ export const ProjectDetailPage: React.FC = () => {
   };
 
   const handleRemoveCollaborator = async (userId: string) => {
+    if (!ensureProjectUnlocked()) {
+      return;
+    }
+
     await removeCollaboratorMutation.mutateAsync({ projectId, userId });
     toast.success('Collaborator removed');
   };
@@ -328,12 +260,13 @@ export const ProjectDetailPage: React.FC = () => {
                   </Badge>
                 }
                 onClick={() => setIsCollaboratorModalOpen(true)}
+                disabled={isProjectLocked}
               >
                 Collaborators
               </Button>
             )}
             {/* Lock / Unlock */}
-            {canChangeStatus && !project.isLocked && (
+            {canLockUnlock && !isProjectLocked && (
               <Button
                 variant="outline"
                 icon={<LockIcon />}
@@ -343,7 +276,7 @@ export const ProjectDetailPage: React.FC = () => {
                 Lock
               </Button>
             )}
-            {canChangeStatus && project.isLocked && (
+            {canLockUnlock && isProjectLocked && (
               <Button
                 variant="outline"
                 icon={<LockOpenIcon />}
@@ -359,6 +292,7 @@ export const ProjectDetailPage: React.FC = () => {
               icon={<ContentCopyIcon />}
               onClick={() => setShowCloneConfirm(true)}
               loading={cloneProjectMutation.isPending}
+              disabled={isProjectLocked}
             >
               Clone
             </Button>
@@ -366,7 +300,7 @@ export const ProjectDetailPage: React.FC = () => {
               variant="outline"
               icon={<EditIcon />}
               onClick={() => navigate(`/projects/${project.projectId}/edit`)}
-              disabled={project.isLocked}
+              disabled={isProjectLocked}
             >
               Edit
             </Button>
@@ -383,7 +317,7 @@ export const ProjectDetailPage: React.FC = () => {
 
       {/* Project Summary */}
       <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 } }}>
-        {project.isLocked && (
+        {isProjectLocked && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, p: 1.5, borderRadius: 1, backgroundColor: '#FFF3E0' }}>
             <LockIcon sx={{ color: '#E65100', fontSize: 20 }} />
             <Typography variant="body2" color="#E65100" fontWeight={500}>
@@ -403,6 +337,7 @@ export const ProjectDetailPage: React.FC = () => {
                     <StatusChangeDropdown
                       currentStatus={project.status}
                       onStatusChange={handleStatusChange}
+                      disabled={isProjectLocked}
                       loading={changeStatusMutation.isPending}
                     />
                   ) : (
@@ -508,6 +443,7 @@ export const ProjectDetailPage: React.FC = () => {
           icon={<AddIcon />}
           onClick={handleAddPanel}
           loading={createPanelMutation.isPending}
+          disabled={isProjectLocked}
         >
           Add Panel
         </Button>
@@ -520,8 +456,8 @@ export const ProjectDetailPage: React.FC = () => {
               panel={panel}
               summary={panel.summary}
               onClick={() => navigate(`/projects/${projectId}/panel/${panel.panelId}`)}
-              onDuplicate={() => setDuplicatePanelId(panel.panelId)}
-              onDelete={() => setDeletePanelId(panel.panelId)}
+              onDuplicate={!isProjectLocked ? () => setDuplicatePanelId(panel.panelId) : undefined}
+              onDelete={!isProjectLocked ? () => setDeletePanelId(panel.panelId) : undefined}
             />
           </Grid>
         ))}
@@ -529,10 +465,11 @@ export const ProjectDetailPage: React.FC = () => {
         {/* Add Panel Card - always shown in grid for easy access */}
         <Grid item xs={12} sm={6} md={4} lg={3}>
           <Paper
-            onClick={handleAddPanel}
+            onClick={isProjectLocked ? undefined : handleAddPanel}
             sx={{
               p: { xs: 1.5, sm: 2 },
-              cursor: 'pointer',
+              cursor: isProjectLocked ? 'not-allowed' : 'pointer',
+              opacity: isProjectLocked ? 0.6 : 1,
               borderRadius: 2,
               border: '2px dashed',
               borderColor: 'grey.300',
@@ -543,13 +480,17 @@ export const ProjectDetailPage: React.FC = () => {
               justifyContent: 'center',
               minHeight: { xs: 100, sm: 130 },
               transition: 'all 0.2s',
-              '&:hover': {
-                borderColor: 'primary.main',
-                backgroundColor: 'primary.light',
-                '& .add-icon': {
-                  color: 'primary.main',
-                },
-              },
+              ...(isProjectLocked
+                ? {}
+                : {
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      backgroundColor: 'primary.light',
+                      '& .add-icon': {
+                        color: 'primary.main',
+                      },
+                    },
+                  }),
             }}
           >
             <AddIcon

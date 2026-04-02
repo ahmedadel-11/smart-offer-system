@@ -69,10 +69,10 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   const actions: MenuAction[] = [
-    ...(onEdit
+    ...(!project.isLocked && onEdit
       ? [{ label: 'Edit', icon: <EditIcon fontSize="small" />, onClick: () => onEdit(project) }]
       : []),
-    ...(onDuplicate
+    ...(!project.isLocked && onDuplicate
       ? [
           {
             label: 'Duplicate',
@@ -90,7 +90,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           },
         ]
       : []),
-    ...(onDelete
+    ...(!project.isLocked && onDelete
       ? [
           {
             label: 'Delete',
