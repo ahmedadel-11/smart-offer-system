@@ -362,49 +362,6 @@ export const ProjectDetailPage: React.FC = () => {
             >
               Clone
             </Button>
-            {/* Export Material List */}
-            <Button
-              variant="outline"
-              icon={<ListAltIcon />}
-              onClick={handleExportMaterialList}
-              disabled={isExporting}
-            >
-              Material List
-            </Button>
-            {/* Backend PDF exports */}
-            <Button
-              variant="outline"
-              icon={<PictureAsPdfIcon />}
-              onClick={handleExportTechnicalOfferPdf}
-              disabled={isExporting}
-            >
-              Technical PDF
-            </Button>
-            <Button
-              variant="outline"
-              icon={<PictureAsPdfIcon />}
-              onClick={handleExportCommercialOfferPdf}
-              disabled={isExporting}
-            >
-              Commercial PDF
-            </Button>
-            {/* Export offer Excel */}
-            <Button
-              variant="outline"
-              icon={<FileDownloadIcon />}
-              onClick={handleExportOfferExcel}
-              disabled={isExporting}
-            >
-              Offer Excel
-            </Button>
-            <Button
-              variant="outline"
-              icon={<FileDownloadIcon />}
-              onClick={handleExportProject}
-              disabled={isExporting}
-            >
-              {isExporting ? 'Exporting…' : 'Export Excel'}
-            </Button>
             <Button
               variant="outline"
               icon={<EditIcon />}

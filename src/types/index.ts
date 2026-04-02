@@ -30,30 +30,6 @@ export const PanelItemTypeColors: Record<PanelItemType, string> = {
   [PanelItemType.BusbarAndCables]: '#9C27B0' // Purple
 };
 
-export enum ProjectStatus {
-  Draft = 'Draft',
-  InProgress = 'InProgress',
-  Review = 'Review',
-  Completed = 'Completed',
-  Cancelled = 'Cancelled'
-}
-
-export const ProjectStatusLabels: Record<ProjectStatus, string> = {
-  [ProjectStatus.Draft]: 'Draft',
-  [ProjectStatus.InProgress]: 'In Progress',
-  [ProjectStatus.Review]: 'Review',
-  [ProjectStatus.Completed]: 'Completed',
-  [ProjectStatus.Cancelled]: 'Cancelled'
-};
-
-export const ProjectStatusColors: Record<ProjectStatus, string> = {
-  [ProjectStatus.Draft]: '#9E9E9E',
-  [ProjectStatus.InProgress]: '#2196F3',
-  [ProjectStatus.Review]: '#FF9800',
-  [ProjectStatus.Completed]: '#4CAF50',
-  [ProjectStatus.Cancelled]: '#F44336'
-};
-
 // =====================
 // Entity Status (Enhanced)
 // =====================
@@ -642,6 +618,70 @@ export interface OfferItemData {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+}
+
+// =====================
+// Technical & Commercial Offer DTOs (API Response Models)
+// =====================
+
+/**
+ * Represents the core container for the technical offer.
+ * Returned by GET /api/Projects/{id}/technical-offer
+ */
+export interface TechnicalOfferDto {
+  projectName: string;
+  customer: string;
+  panels: TechnicalOfferPanelDto[];
+}
+
+/**
+ * Represents technical data grouped by panel.
+ */
+export interface TechnicalOfferPanelDto {
+  panelName: string;
+  items: TechnicalOfferItemDto[];
+}
+
+/**
+ * Represents individual material items with their technical specifications.
+ */
+export interface TechnicalOfferItemDto {
+  itemCode: string;
+  description: string;
+  brand?: string | null;
+  ratedCurrent?: string | null;
+  isc?: string | null;
+  poles?: number | null;
+  reference?: string | null;
+  quantity: number;
+}
+
+/**
+ * Represents the core financial and commercial summary.
+ * Returned by GET /api/Projects/{id}/commercial-offer
+ */
+export interface CommercialOfferDto {
+  projectName: string;
+  customer: string;
+  currency: string;
+  date: string;
+  status: string;
+  panels: CommercialOfferPanelDto[];
+  grandTotalItems: number;
+  grandTotalCost: number;
+  grandTotalMargin: number;
+  grandTotalPrice: number;
+}
+
+/**
+ * Represents the commercial costings associated with an individual panel.
+ */
+export interface CommercialOfferPanelDto {
+  name: string;
+  items: number;
+  totalCost: number;
+  marginAmount: number;
+  totalPrice: number;
 }
 
 // =====================

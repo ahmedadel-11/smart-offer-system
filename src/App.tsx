@@ -7,14 +7,19 @@ import { theme } from './theme';
 import { AppRouter } from './router';
 import { ErrorBoundary } from './components';
 import { AuthProvider } from './contexts/AuthContext';
+import { CACHE_CONFIG, TOAST_CONFIG } from './constants';
 
-// Create a query client with default options
+/**
+ * React Query Client
+ * Created outside component to prevent recreation on every render
+ * Configuration uses centralized CACHE_CONFIG constants
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (formerly cacheTime)
-      retry: 1,
+      staleTime: CACHE_CONFIG.STALE_TIME_MS,
+      gcTime: CACHE_CONFIG.GC_TIME_MS,
+      retry: CACHE_CONFIG.RETRY_COUNT,
       refetchOnWindowFocus: false,
     },
     mutations: {
@@ -23,17 +28,14 @@ const queryClient = new QueryClient({
   },
 });
 
-// Toast configuration
+/**
+ * Toast configuration using centralized constants
+ */
 const toasterConfig = {
-  position: 'top-right' as const,
+  position: TOAST_CONFIG.POSITION,
   toastOptions: {
-    duration: 4000,
-    style: {
-      borderRadius: '8px',
-      padding: '12px 16px',
-      fontSize: '14px',
-      fontWeight: 500,
-    },
+    duration: TOAST_CONFIG.DURATION_MS,
+    style: TOAST_CONFIG.STYLE,
     success: {
       iconTheme: {
         primary: '#4CAF50',

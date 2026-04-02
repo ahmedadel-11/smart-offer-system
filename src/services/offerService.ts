@@ -1,7 +1,8 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import { ProjectDetail, PanelItemTypeLabels, PanelItemType } from '../types';
+import { ProjectDetail, PanelItemTypeLabels, PanelItemType, TechnicalOfferDto, CommercialOfferDto } from '../types';
+import { apiClient } from './api';
 
 interface OfferOptions {
   companyName?: string;
@@ -351,6 +352,40 @@ export const offerService = {
   // Download Excel
   downloadExcel(workbook: XLSX.WorkBook, filename: string): void {
     XLSX.writeFile(workbook, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+  },
+
+  /**
+   * Fetch technical offer data from API
+   * GET /api/Projects/{id}/technical-offer
+   * Returns structured technical details with project info and panels with materials
+   */
+  async getTechnicalOfferData(projectId: number): Promise<TechnicalOfferDto> {
+    try {
+      const response = await apiClient.get<TechnicalOfferDto>(
+        `/Projects/${projectId}/technical-offer`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch technical offer data:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetch commercial offer data from API
+   * GET /api/Projects/{id}/commercial-offer
+   * Returns structured commercial details with project metadata and pricing summary
+   */
+  async getCommercialOfferData(projectId: number): Promise<CommercialOfferDto> {
+    try {
+      const response = await apiClient.get<CommercialOfferDto>(
+        `/Projects/${projectId}/commercial-offer`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch commercial offer data:', error);
+      throw error;
+    }
   },
 };
 

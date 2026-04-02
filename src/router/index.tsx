@@ -6,30 +6,89 @@ import {
 } from 'react-router-dom';
 import { AppLayout } from '../components';
 
-// Import pages directly (no lazy loading to avoid Suspense issues)
-import { DashboardPage } from '../pages/Dashboard/DashboardPage';
-import { ProjectsPage } from '../pages/Projects/ProjectsPage';
-import { ProjectDetailPage } from '../pages/Projects/ProjectDetailPage';
-import { ProjectEditPage } from '../pages/Projects/ProjectEditPage';
-import { MaterialsPage } from '../pages/Materials/MaterialsPage';
-import { PanelDesignerPage } from '../pages/PanelDesigner/PanelDesignerPage';
-import { OfferGeneratorPage } from '../pages/OfferGenerator/OfferGeneratorPage';
-import { OffersPage } from '../pages/Offers/OffersPage';
-import { ImportPage } from '../pages/Import/ImportPage';
-import { SettingsPage } from '../pages/Settings/SettingsPage';
-
-// Auth & RBAC pages
-import { LoginPage } from '../pages/Login/LoginPage';
-import { ProfilePage } from '../pages/Profile/ProfilePage';
-import { UserManagementPage } from '../pages/Admin/UserManagementPage';
-import { RoleManagementPage } from '../pages/Admin/RoleManagementPage';
-import { PermissionManagementPage } from '../pages/Admin/PermissionManagementPage';
-import { AuditLogsPage } from '../pages/Admin/AuditLogsPage';
+// Lazy load pages to reduce initial bundle size (~30-40KB savings)
+// This enables code splitting: each route is in a separate chunk
+const DashboardPage = React.lazy(() =>
+  import('../pages/Dashboard/DashboardPage').then(m => ({ default: m.DashboardPage }))
+);
+const ProjectsPage = React.lazy(() =>
+  import('../pages/Projects/ProjectsPage').then(m => ({ default: m.ProjectsPage }))
+);
+const ProjectDetailPage = React.lazy(() =>
+  import('../pages/Projects/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage }))
+);
+const ProjectEditPage = React.lazy(() =>
+  import('../pages/Projects/ProjectEditPage').then(m => ({ default: m.ProjectEditPage }))
+);
+const MaterialsPage = React.lazy(() =>
+  import('../pages/Materials/MaterialsPage').then(m => ({ default: m.MaterialsPage }))
+);
+const PanelDesignerPage = React.lazy(() =>
+  import('../pages/PanelDesigner/PanelDesignerPage').then(m => ({ default: m.PanelDesignerPage }))
+);
+const OfferGeneratorPage = React.lazy(() =>
+  import('../pages/OfferGenerator/OfferGeneratorPage').then(m => ({ default: m.OfferGeneratorPage }))
+);
+const OffersPage = React.lazy(() =>
+  import('../pages/Offers/OffersPage').then(m => ({ default: m.OffersPage }))
+);
+const ImportPage = React.lazy(() =>
+  import('../pages/Import/ImportPage').then(m => ({ default: m.ImportPage }))
+);
+const SettingsPage = React.lazy(() =>
+  import('../pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage }))
+);
+const LoginPage = React.lazy(() =>
+  import('../pages/Login/LoginPage').then(m => ({ default: m.LoginPage }))
+);
+const ProfilePage = React.lazy(() =>
+  import('../pages/Profile/ProfilePage').then(m => ({ default: m.ProfilePage }))
+);
+const UserManagementPage = React.lazy(() =>
+  import('../pages/Admin/UserManagementPage').then(m => ({ default: m.UserManagementPage }))
+);
+const RoleManagementPage = React.lazy(() =>
+  import('../pages/Admin/RoleManagementPage').then(m => ({ default: m.RoleManagementPage }))
+);
+const PermissionManagementPage = React.lazy(() =>
+  import('../pages/Admin/PermissionManagementPage').then(m => ({ default: m.PermissionManagementPage }))
+);
+const AuditLogsPage = React.lazy(() =>
+  import('../pages/Admin/AuditLogsPage').then(m => ({ default: m.AuditLogsPage }))
+);
 
 // Auth guards
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 
 
+/**
+ * Loading fallback component for lazy-loaded routes
+ * Shown while a route chunk is being downloaded
+ */
+const RouteLoadingFallback: React.FC = () => (
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '400px',
+      fontSize: '14px',
+      color: '#666',
+    }}
+  >
+    <span>Loading...</span>
+  </div>
+);
+
+/**
+ * Suspense wrapper for lazy routes
+ * Wraps route elements in Suspense with loading fallback
+ */
+const SuspenseWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <React.Suspense fallback={<RouteLoadingFallback />}>
+    {children}
+  </React.Suspense>
+);
 
 // Layout wrapper — requires authentication (any role)
 const LayoutWrapper: React.FC = () => (
@@ -44,7 +103,7 @@ const LayoutWrapper: React.FC = () => (
 const routes = [
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <SuspenseWrapper><LoginPage /></SuspenseWrapper>,
   },
   {
     path: '/',
@@ -56,7 +115,7 @@ const routes = [
       },
       {
         path: 'dashboard',
-        element: <DashboardPage />,
+        element: <SuspenseWrapper><DashboardPage /></SuspenseWrapper>,
       },
       // Projects — requires any Projects.* permission
       {
@@ -66,7 +125,7 @@ const routes = [
             index: true,
             element: (
               <ProtectedRoute>
-                <ProjectsPage />
+                <SuspenseWrapper><ProjectsPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -74,7 +133,7 @@ const routes = [
             path: ':id',
             element: (
               <ProtectedRoute>
-                <ProjectDetailPage />
+                <SuspenseWrapper><ProjectDetailPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -82,7 +141,7 @@ const routes = [
             path: ':id/edit',
             element: (
               <ProtectedRoute requiredPermissions={['Projects.Edit']}>
-                <ProjectEditPage />
+                <SuspenseWrapper><ProjectEditPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -90,7 +149,7 @@ const routes = [
             path: ':id/offer',
             element: (
               <ProtectedRoute requiredPermissions={['Offers.View', 'Offers.Generate', 'Offers.Export']}>
-                <OfferGeneratorPage />
+                <SuspenseWrapper><OfferGeneratorPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -98,7 +157,7 @@ const routes = [
             path: ':id/panel/:panelId',
             element: (
               <ProtectedRoute requiredPermissions={['Panels.View', 'Panels.Edit', 'Panels.Create']}>
-                <PanelDesignerPage />
+                <SuspenseWrapper><PanelDesignerPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -109,7 +168,7 @@ const routes = [
         path: 'materials',
         element: (
           <ProtectedRoute>
-            <MaterialsPage />
+            <SuspenseWrapper><MaterialsPage /></SuspenseWrapper>
           </ProtectedRoute>
         ),
       },
@@ -118,7 +177,7 @@ const routes = [
         path: 'offers',
         element: (
           <ProtectedRoute>
-            <OffersPage />
+            <SuspenseWrapper><OffersPage /></SuspenseWrapper>
           </ProtectedRoute>
         ),
       },
@@ -127,17 +186,17 @@ const routes = [
         path: 'import',
         element: (
           <ProtectedRoute>
-            <ImportPage />
+            <SuspenseWrapper><ImportPage /></SuspenseWrapper>
           </ProtectedRoute>
         ),
       },
       {
         path: 'settings',
-        element: <SettingsPage />,
+        element: <SuspenseWrapper><SettingsPage /></SuspenseWrapper>,
       },
       {
         path: 'profile',
-        element: <ProfilePage />,
+        element: <SuspenseWrapper><ProfilePage /></SuspenseWrapper>,
       },
       // Admin routes — requires respective admin permissions
       {
@@ -147,7 +206,7 @@ const routes = [
             path: 'users',
             element: (
               <ProtectedRoute>
-                <UserManagementPage />
+                <SuspenseWrapper><UserManagementPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -155,7 +214,7 @@ const routes = [
             path: 'roles',
             element: (
               <ProtectedRoute>
-                <RoleManagementPage />
+                <SuspenseWrapper><RoleManagementPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -163,7 +222,7 @@ const routes = [
             path: 'permissions',
             element: (
               <ProtectedRoute>
-                <PermissionManagementPage />
+                <SuspenseWrapper><PermissionManagementPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
@@ -171,7 +230,7 @@ const routes = [
             path: 'audit-logs',
             element: (
               <ProtectedRoute>
-                <AuditLogsPage />
+                <SuspenseWrapper><AuditLogsPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },
