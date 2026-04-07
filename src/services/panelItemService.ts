@@ -1,7 +1,17 @@
 import { apiClient } from './api';
-import { PanelItem, CreatePanelItem, UpdatePanelItem, PanelItemType } from '../types';
+import {
+  PanelItem,
+  CreatePanelItem,
+  UpdatePanelItem,
+  PanelItemType,
+  BusbarCablesWorksheetInput,
+  BusbarCablesWorksheetResult,
+  BusbarCablesWorksheetPayload,
+  SaveBusbarCablesWithPriceRequest,
+} from '../types';
 
 const ENDPOINT = '/panelitems';
+const BUSBAR_ENDPOINT = `${ENDPOINT}/busbar-cables`;
 
 export const panelItemService = {
   // Get items by panel
@@ -85,6 +95,39 @@ export const panelItemService = {
       quantity,
       itemType,
     });
+  },
+
+  async calculateBusbarCables(
+    input: BusbarCablesWorksheetInput
+  ): Promise<BusbarCablesWorksheetResult> {
+    const response = await apiClient.post<BusbarCablesWorksheetResult>(`${BUSBAR_ENDPOINT}/calculate`, input);
+    return response.data;
+  },
+
+  async saveBusbarCablesWorksheet(
+    panelId: number,
+    input: BusbarCablesWorksheetInput,
+    options?: { useDefaultPrice?: boolean; manualPricePerKg?: number }
+  ): Promise<PanelItem> {
+    const payload: SaveBusbarCablesWithPriceRequest = {
+      input,
+      useDefaultPrice: options?.useDefaultPrice ?? true,
+      manualPricePerKg: options?.manualPricePerKg,
+    };
+    const response = await apiClient.post<PanelItem>(`${BUSBAR_ENDPOINT}/panel/${panelId}/save-with-price`, payload);
+    return response.data;
+  },
+
+  async getBusbarCablesWorksheet(panelId: number): Promise<BusbarCablesWorksheetPayload | null> {
+    try {
+      const response = await apiClient.get<BusbarCablesWorksheetPayload>(`${BUSBAR_ENDPOINT}/panel/${panelId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   // Get unassigned items (items without type)

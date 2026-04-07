@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { panelItemService } from '../services/panelItemService';
-import { CreatePanelItem, UpdatePanelItem, PanelItemType } from '../types';
+import {
+  CreatePanelItem,
+  UpdatePanelItem,
+  PanelItemType,
+  BusbarCablesWorksheetInput,
+} from '../types';
 import toast from 'react-hot-toast';
 
 function handleMutationError(error: any, fallbackMsg: string) {
@@ -12,6 +17,7 @@ function handleMutationError(error: any, fallbackMsg: string) {
 import { PANELS_QUERY_KEY } from './usePanels';
 
 export const PANEL_ITEMS_QUERY_KEY = 'panelItems';
+export const BUSBAR_CABLES_QUERY_KEY = 'busbarCables';
 
 export function usePanelItems(panelId: number) {
   return useQuery({
@@ -142,5 +148,44 @@ export function useAddMaterialToPanel() {
       queryClient.invalidateQueries({ queryKey: [PANELS_QUERY_KEY, item.panelId] });
     },
     onError: (error: any) => handleMutationError(error, 'Failed to add material to panel'),
+  });
+}
+
+export function useBusbarCablesWorksheet(panelId: number, enabled = true) {
+  return useQuery({
+    queryKey: [BUSBAR_CABLES_QUERY_KEY, panelId],
+    queryFn: () => panelItemService.getBusbarCablesWorksheet(panelId),
+    enabled: panelId > 0 && enabled,
+  });
+}
+
+export function useCalculateBusbarCablesWorksheet() {
+  return useMutation({
+    mutationFn: (input: BusbarCablesWorksheetInput) => panelItemService.calculateBusbarCables(input),
+    onError: (error: any) => handleMutationError(error, 'Failed to calculate busbar worksheet'),
+  });
+}
+
+export function useSaveBusbarCablesWorksheet() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      panelId,
+      input,
+      useDefaultPrice,
+      manualPricePerKg,
+    }: {
+      panelId: number;
+      input: BusbarCablesWorksheetInput;
+      useDefaultPrice?: boolean;
+      manualPricePerKg?: number;
+    }) => panelItemService.saveBusbarCablesWorksheet(panelId, input, { useDefaultPrice, manualPricePerKg }),
+    onSuccess: (item) => {
+      queryClient.invalidateQueries({ queryKey: [BUSBAR_CABLES_QUERY_KEY, item.panelId] });
+      queryClient.invalidateQueries({ queryKey: [PANEL_ITEMS_QUERY_KEY, 'panel', item.panelId] });
+      queryClient.invalidateQueries({ queryKey: [PANEL_ITEMS_QUERY_KEY, 'panel', item.panelId, 'grouped'] });
+      queryClient.invalidateQueries({ queryKey: [PANEL_ITEMS_QUERY_KEY, item.panelItemId] });
+    },
+    onError: (error: any) => handleMutationError(error, 'Failed to save busbar worksheet'),
   });
 }

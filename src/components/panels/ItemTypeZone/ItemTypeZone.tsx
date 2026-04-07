@@ -19,7 +19,10 @@ interface ItemTypeZoneProps {
   onRemove?: (itemId: number) => void;
   onQuantityChange?: (itemId: number, quantity: number) => void;
   onAddItems?: () => void;
+  addButtonLabel?: string;
+  emptyStateLabel?: string;
   onOverrideChange?: (itemId: number, updates: { overrideDiscount?: number; overrideMargin?: number; extraDiscount?: number }) => void;
+  renderItem?: (item: PanelItem) => React.ReactNode;
 }
 
 const zoneIcons: Record<ZoneType, React.ReactNode> = {
@@ -39,7 +42,10 @@ export const ItemTypeZone: React.FC<ItemTypeZoneProps> = ({
   onRemove,
   onQuantityChange,
   onAddItems,
+  addButtonLabel = 'Add Items',
+  emptyStateLabel = 'Click to add items',
   onOverrideChange,
+  renderItem,
 }) => {
   return (
     <Paper
@@ -101,7 +107,7 @@ export const ItemTypeZone: React.FC<ItemTypeZoneProps> = ({
                 },
               }}
             >
-              Add Items
+              {addButtonLabel}
             </Button>
           )}
         </Box>
@@ -138,17 +144,22 @@ export const ItemTypeZone: React.FC<ItemTypeZoneProps> = ({
             onClick={onAddItems}
           >
             <AddIcon sx={{ fontSize: 28, color: 'grey.400' }} />
-            {onAddItems ? 'Click to add items' : 'No items'}
+            {onAddItems ? emptyStateLabel : 'No items'}
           </Box>
         ) : (
           items.map((item) => (
-            <ZoneItem
-              key={item.panelItemId}
-              item={item}
-              onRemove={onRemove ? () => onRemove(item.panelItemId) : undefined}
-              onQuantityChange={onQuantityChange ? (qty) => onQuantityChange(item.panelItemId, qty) : undefined}
-              onOverrideChange={onOverrideChange}
-            />
+            <React.Fragment key={item.panelItemId}>
+              {renderItem ? (
+                renderItem(item)
+              ) : (
+                <ZoneItem
+                  item={item}
+                  onRemove={onRemove ? () => onRemove(item.panelItemId) : undefined}
+                  onQuantityChange={onQuantityChange ? (qty) => onQuantityChange(item.panelItemId, qty) : undefined}
+                  onOverrideChange={onOverrideChange}
+                />
+              )}
+            </React.Fragment>
           ))
         )}
       </Box>

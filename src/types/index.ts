@@ -310,6 +310,86 @@ export interface UpdatePanelItem {
 }
 
 // =====================
+// Busbar & Cables Worksheet
+// =====================
+
+export interface BusbarCablesMainBusbarRowInput {
+  size: string;
+  bars: number;
+  poles: number;
+  vrMeters: number;
+  horizontalMeters: number;
+}
+
+export interface BusbarCablesNeutralEarthRowInput {
+  size: string;
+  bars: number;
+  neutralMeters: number;
+  earthMeters: number;
+}
+
+export interface BusbarCablesConnectionRowInput {
+  size: string;
+  bars: number;
+  poles: number;
+  customMeters: number;
+  bbMeters: number;
+}
+
+export interface BusbarCablesMainBusbarRowResult extends BusbarCablesMainBusbarRowInput {
+  totalMeters: number;
+  totalKg: number;
+}
+
+export interface BusbarCablesNeutralEarthRowResult extends BusbarCablesNeutralEarthRowInput {
+  totalMeters: number;
+  totalKg: number;
+}
+
+export interface BusbarCablesConnectionRowResult extends BusbarCablesConnectionRowInput {
+  totalMeters: number;
+  totalKg: number;
+}
+
+export interface BusbarCablesWorksheetInput {
+  mainBusbar: BusbarCablesMainBusbarRowInput[];
+  neutralEarthBar: BusbarCablesNeutralEarthRowInput[];
+  connection: BusbarCablesConnectionRowInput[];
+}
+
+export interface BusbarCablesWorksheetResult {
+  mainBusbar: BusbarCablesMainBusbarRowResult[];
+  neutralEarthBar: BusbarCablesNeutralEarthRowResult[];
+  connection: BusbarCablesConnectionRowResult[];
+  mainBusbarTotalKg: number;
+  neutralEarthTotalKg: number;
+  connectionTotalKg: number;
+  grandTotalKg: number;
+}
+
+export interface BusbarCablesPricingSnapshot {
+  defaultPricePerKg: number;
+  appliedPricePerKg: number;
+  priceSource: 'Default' | 'Manual' | string;
+  totalKg: number;
+  totalCost: number;
+}
+
+export interface SaveBusbarCablesWithPriceRequest {
+  input: BusbarCablesWorksheetInput;
+  useDefaultPrice: boolean;
+  manualPricePerKg?: number;
+}
+
+export interface BusbarCablesWorksheetPayload {
+  panelItemId: number;
+  panelId: number;
+  input: BusbarCablesWorksheetInput;
+  result: BusbarCablesWorksheetResult;
+  pricing?: BusbarCablesPricingSnapshot;
+}
+
+// =====================
 // Import Interfaces
 // =====================
 

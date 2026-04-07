@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -52,6 +52,7 @@ import {
   useAddPanelCollaborator,
   useRemovePanelCollaborator,
   useUsers,
+  useBusbarCablesWorksheet,
   useProjectLockGuard,
 } from '../../hooks';
 import {
@@ -62,6 +63,18 @@ import {
 } from '../../types';
 import { panelService } from '../../services';
 import toast from 'react-hot-toast';
+
+const BusbarCablesWorksheetModal = React.lazy(() =>
+  import('../../components/panels/BusbarCablesWorksheetModal').then((module) => ({
+    default: module.BusbarCablesWorksheetModal,
+  }))
+);
+
+const BusbarCablesWorksheetCard = React.lazy(() =>
+  import('../../components/panels/BusbarCablesWorksheetCard').then((module) => ({
+    default: module.BusbarCablesWorksheetCard,
+  }))
+);
 
 export const PanelDesignerPage: React.FC = () => {
   const { id: projectId, panelId: panelIdStr } = useParams<{ id: string; panelId: string }>();
@@ -74,6 +87,10 @@ export const PanelDesignerPage: React.FC = () => {
   // Material selection modal state
   const [selectionModalOpen, setSelectionModalOpen] = useState(false);
   const [activeZone, setActiveZone] = useState<ZoneType | null>(null);
+  const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
+  const [busbarWorksheetOpen, setBusbarWorksheetOpen] = useState(false);
 
   // Data fetching
   const { data: project, isLoading: projectLoading } = useProject(parsedProjectId);
@@ -82,6 +99,11 @@ export const PanelDesignerPage: React.FC = () => {
   const { data: materials } = useMaterials();
   const { data: categories } = useCategories();
   const { data: brands } = useBrands();
+  const { data: busbarWorksheet } = useBusbarCablesWorksheet(selectedPanelId, busbarWorksheetOpen);
+  const busbarSystemMaterial = useMemo(
+    () => materials?.find((material) => material.itemCode === 'SYS-BUSBAR-CABLES'),
+    [materials]
+  );
 
   // Mutations
   const addMaterialMutation = useAddMaterialToPanel();
@@ -96,11 +118,6 @@ export const PanelDesignerPage: React.FC = () => {
   const removePanelCollaboratorMutation = useRemovePanelCollaborator();
   const { data: allUsers } = useUsers();
   const { user, hasRole, hasPermission } = useAuth();
-
-  // UI states for new features
-  const [duplicateConfirmOpen, setDuplicateConfirmOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
 
   // Panel name editing state
   const [editingPanelId, setEditingPanelId] = useState<number | null>(null);
@@ -263,6 +280,14 @@ export const PanelDesignerPage: React.FC = () => {
 
     setActiveZone(zone);
     setSelectionModalOpen(true);
+  };
+
+  const handleOpenBusbarWorksheet = () => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    setBusbarWorksheetOpen(true);
   };
 
   // Add selected materials to the active zone
@@ -677,9 +702,20 @@ export const PanelDesignerPage: React.FC = () => {
               color={getZoneConfig('busbarAndCables').color}
               description={getZoneConfig('busbarAndCables').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
-              onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
-              onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('busbarAndCables') : undefined}
-              onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
+              onAddItems={canEditPanel && !isProjectLocked ? handleOpenBusbarWorksheet : undefined}
+              addButtonLabel={zones.busbarAndCables.length > 0 ? 'Edit Worksheet' : 'Open Worksheet'}
+              emptyStateLabel={zones.busbarAndCables.length > 0 ? 'Open the worksheet to edit it' : 'Click to open worksheet'}
+              renderItem={(item) => (
+                <Suspense fallback={<Box sx={{ py: 2 }}>Loading worksheet...</Box>}>
+                  <BusbarCablesWorksheetCard
+                    item={item}
+                    worksheet={busbarWorksheet ?? null}
+                    currency={project?.currency || 'EGP'}
+                    onEdit={handleOpenBusbarWorksheet}
+                    onDelete={() => handleRemoveItem(item.panelItemId)}
+                  />
+                </Suspense>
+              )}
             />
           </Grid>
         </Grid>
@@ -701,6 +737,19 @@ export const PanelDesignerPage: React.FC = () => {
           onAddMaterials={handleAddMaterials}
           loading={addMaterialMutation.isPending}
         />
+      )}
+
+      {busbarWorksheetOpen && (
+        <Suspense fallback={<Loading fullScreen message="Loading worksheet editor..." />}>
+          <BusbarCablesWorksheetModal
+            open={busbarWorksheetOpen}
+            panelId={selectedPanelId}
+            worksheet={busbarWorksheet ?? null}
+            defaultPricePerKg={busbarSystemMaterial?.basePrice}
+            currency={project?.currency || 'EGP'}
+            onClose={() => setBusbarWorksheetOpen(false)}
+          />
+        </Suspense>
       )}
 
       {/* Delete Panel Confirmation */}
