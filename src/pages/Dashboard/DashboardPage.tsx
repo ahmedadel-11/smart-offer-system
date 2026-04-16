@@ -18,6 +18,7 @@ import { PageHeader, Button, EntityStatusBadge } from '../../components';
 import { useProjects, useDashboardStats, useRecentActivity } from '../../hooks';
 import { useAuth } from '../../contexts';
 import { RecentActivityItem } from '../../types';
+import { parseUtcTimestamp } from '../../utils';
 
 interface StatCardProps {
   title: string;
@@ -367,7 +368,8 @@ function getActionColor(action: string): string {
 
 function formatRelativeTime(dateStr: string): string {
   const now = new Date();
-  const date = new Date(dateStr);
+  const date = parseUtcTimestamp(dateStr);
+  if (Number.isNaN(date.getTime())) return 'N/A';
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60_000);
   if (diffMin < 1) return 'Just now';

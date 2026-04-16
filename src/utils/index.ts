@@ -4,3 +4,4 @@
  */
 
 export * from './errorHandling';
+export * from './dateTime';

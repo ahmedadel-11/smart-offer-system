@@ -46,6 +46,7 @@ interface BaseProjectFormProps {
   isLoading?: boolean;
   customers?: string[];
   users?: UserDto[];
+  supportedCurrencies?: string[];
   onCancel?: () => void;
 }
 
@@ -65,14 +66,13 @@ interface EditProjectFormProps extends BaseProjectFormProps {
 
 type ProjectFormProps = CreateProjectFormProps | EditProjectFormProps;
 
-const currencies = ['EGP', 'USD', 'EUR', 'GBP', 'AED', 'SAR', 'MAD'];
-
 export const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   const {
     onSubmit,
     isLoading = false,
     customers = [],
     users = [],
+    supportedCurrencies = [],
     onCancel,
     mode,
   } = props;
@@ -82,6 +82,16 @@ export const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   
   const schema = isCreateMode ? createProjectSchema : updateProjectSchema;
   const initialData = props.initialData || {};
+  const normalizedCurrencies = React.useMemo(() => {
+    const unique = new Set(
+      supportedCurrencies
+        .map((currency) => currency.trim().toUpperCase())
+        .filter(Boolean)
+    );
+    unique.add('EGP');
+
+    return Array.from(unique).sort();
+  }, [supportedCurrencies]);
 
   const {
     control,
@@ -92,7 +102,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = (props) => {
     defaultValues: {
       projectName: initialData.projectName || '',
       customer: initialData.customer || '',
-      currency: initialData.currency || 'EGP',
+      currency: initialData.currency?.toUpperCase() || 'EGP',
       defaultMargin: (initialData as any).defaultMargin ?? 20,
       ...(isCreateMode && { numberOfPanels: (initialData as CreateProject).numberOfPanels || 1 }),
       ...(!isCreateMode && { createdByUserId: (initialData as any).createdByUserId || '' }),
@@ -101,10 +111,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = (props) => {
   });
 
   const handleFormSubmit = (data: CreateProjectFormData | UpdateProjectFormData) => {
+    const normalizedData = {
+      ...data,
+      currency: data.currency.toUpperCase(),
+    };
+
     if (isCreateMode) {
-      onSubmit(data as CreateProject);
+      onSubmit(normalizedData as CreateProject);
     } else {
-      onSubmit(data as UpdateProject);
+      onSubmit(normalizedData as UpdateProject);
     }
   };
 
@@ -197,15 +212,15 @@ export const ProjectForm: React.FC<ProjectFormProps> = (props) => {
               <FormControl fullWidth required error={!!errors.currency}>
                 <InputLabel>Currency</InputLabel>
                 <Select {...field} label="Currency">
-                  {currencies.map((currency) => (
+                  {normalizedCurrencies.map((currency) => (
                     <MenuItem key={currency} value={currency}>
                       {currency}
                     </MenuItem>
                   ))}
                 </Select>
-                {errors.currency && (
-                  <FormHelperText>{errors.currency.message}</FormHelperText>
-                )}
+                <FormHelperText>
+                  {errors.currency?.message || 'Only configured currencies are allowed.'}
+                </FormHelperText>
               </FormControl>
             )}
           />
@@ -225,26 +240,6 @@ export const ProjectForm: React.FC<ProjectFormProps> = (props) => {
                 onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
                 error={!!(errors as any).defaultMargin}
                 helperText={(errors as any).defaultMargin?.message || 'Applied to all panels by default'}
-                inputProps={{ min: 0, max: 100, step: 0.5 }}
-              />
-            )}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6}>
-          <Controller
-            name="defaultMargin"
-            control={control}
-            render={({ field: { onChange, value, ...field } }) => (
-              <TextField
-                {...field}
-                type="number"
-                label="Default Margin (%)"
-                fullWidth
-                value={value ?? 20}
-                onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-                error={!!(errors as any).defaultMargin}
-                helperText={(errors as any).defaultMargin?.message || 'Applied to new panels by default'}
                 inputProps={{ min: 0, max: 100, step: 0.5 }}
               />
             )}

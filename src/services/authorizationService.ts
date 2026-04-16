@@ -43,6 +43,7 @@ export const Permissions = {
   'Users.Edit': 'Users.Edit',
   'Users.Delete': 'Users.Delete',
   'Users.ResetPassword': 'Users.ResetPassword',
+  'Users.ManagePermissionOverrides': 'Users.ManagePermissionOverrides',
   // RoleManagement
   'Roles.View': 'Roles.View',
   'Roles.Create': 'Roles.Create',
@@ -63,6 +64,7 @@ export const Permissions = {
   'Projects.Approve': 'Projects.Approve',
   'Projects.ManageCollaborators': 'Projects.ManageCollaborators',
   'Projects.ChangeStatus': 'Projects.ChangeStatus',
+  'Projects.Lock': 'Projects.Lock',
   // Panels
   'Panels.View': 'Panels.View',
   'Panels.Create': 'Panels.Create',
@@ -89,6 +91,8 @@ export const Permissions = {
   // System
   'AuditLogs.View': 'AuditLogs.View',
   'System.Configure': 'System.Configure',
+  'CurrencyRates.View': 'CurrencyRates.View',
+  'CurrencyRates.Manage': 'CurrencyRates.Manage',
 } as const;
 
 export type PermissionName = (typeof Permissions)[keyof typeof Permissions];
@@ -114,6 +118,10 @@ export const PAGE_PERMISSIONS: Record<string, string[]> = {
   '/dashboard': [],
   '/profile': [],
   '/settings': [],
+  '/settings/currency-rates': [
+    Permissions['CurrencyRates.View'],
+    Permissions['CurrencyRates.Manage'],
+  ],
 
   // Business pages — visible if user has any related permission
   '/projects': [
@@ -149,6 +157,7 @@ export const PAGE_PERMISSIONS: Record<string, string[]> = {
     Permissions['Users.Edit'],
     Permissions['Users.Delete'],
     Permissions['Users.ResetPassword'],
+    Permissions['Users.ManagePermissionOverrides'],
   ],
   '/admin/roles': [
     Permissions['Roles.View'],

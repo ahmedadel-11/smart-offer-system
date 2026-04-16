@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import type { AuditLogDto } from '../../types';
+import { formatUtcToLocalDateTime } from '../../utils';
 
 interface AuditLogTableProps {
   logs: AuditLogDto[];
@@ -46,7 +47,7 @@ export const AuditLogTable: React.FC<AuditLogTableProps> = ({ logs, onViewDetail
               <TableRow key={log.id} hover>
                 <TableCell>
                   <Typography variant="body2">
-                    {new Date(log.timestamp).toLocaleString()}
+                    {formatUtcToLocalDateTime(log.timestamp)}
                   </Typography>
                 </TableCell>
                 <TableCell>

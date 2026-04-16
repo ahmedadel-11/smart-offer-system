@@ -9,6 +9,7 @@ import { UserTable } from '../../components/users/UserTable';
 import { UserForm } from '../../components/users/UserForm';
 import { AssignRolesModal } from '../../components/users/AssignRolesModal';
 import { ResetPasswordModal } from '../../components/users/ResetPasswordModal';
+import { UserPermissionOverridesModal } from '../../components/users/UserPermissionOverridesModal';
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog';
 import {
   useUsers,
@@ -22,9 +23,13 @@ import {
 import { useRoles } from '../../hooks/useRoles';
 import type { UserDto, CreateUserDto, UpdateUserDto } from '../../types';
 import { authService } from '../../services/authService';
+import { useAuth } from '../../contexts';
 import toast from 'react-hot-toast';
 
 export const UserManagementPage: React.FC = () => {
+  const { hasPermission } = useAuth();
+  const canManagePermissionOverrides = hasPermission('Users.ManagePermissionOverrides');
+
   const { data: users = [], isLoading } = useUsers();
   const { data: roles = [] } = useRoles();
   const createUser = useCreateUser();
@@ -38,6 +43,7 @@ export const UserManagementPage: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserDto | null>(null);
   const [assignRolesUser, setAssignRolesUser] = useState<UserDto | null>(null);
+  const [permissionOverridesUser, setPermissionOverridesUser] = useState<UserDto | null>(null);
   const [resetPasswordUser, setResetPasswordUser] = useState<UserDto | null>(null);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<UserDto | null>(null);
 
@@ -134,6 +140,7 @@ export const UserManagementPage: React.FC = () => {
           users={users}
           onEdit={handleEditUser}
           onAssignRoles={setAssignRolesUser}
+          onManagePermissionOverrides={setPermissionOverridesUser}
           onResetPassword={setResetPasswordUser}
           onToggleStatus={handleToggleStatus}
           onDelete={setDeleteConfirmUser}
@@ -166,6 +173,13 @@ export const UserManagementPage: React.FC = () => {
         onClose={() => setResetPasswordUser(null)}
         onSubmit={handleResetPassword}
         user={resetPasswordUser}
+      />
+
+      <UserPermissionOverridesModal
+        isOpen={!!permissionOverridesUser}
+        onClose={() => setPermissionOverridesUser(null)}
+        user={permissionOverridesUser}
+        canManage={canManagePermissionOverrides}
       />
 
       {/* Delete Confirmation */}

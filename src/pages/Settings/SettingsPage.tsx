@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Paper,
@@ -8,10 +9,13 @@ import {
   FormControlLabel,
   TextField,
   Alert,
+  Chip,
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import { PageHeader, Button } from '../../components';
+import { useAuth } from '../../contexts';
 import toast from 'react-hot-toast';
 
 interface Settings {
@@ -46,6 +50,11 @@ const defaultSettings: Settings = {
 };
 
 export const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { hasPermission, hasAnyPermission } = useAuth();
+  const canViewRates = hasAnyPermission(['CurrencyRates.View', 'CurrencyRates.Manage']);
+  const canConfigureRates = hasPermission('CurrencyRates.Manage');
+
   const [settings, setSettings] = useState<Settings>(() => {
     try {
       const stored = localStorage.getItem('smartoffer_settings');
@@ -113,6 +122,47 @@ export const SettingsPage: React.FC = () => {
       )}
 
       <Grid container spacing={{ xs: 2, md: 3 }}>
+        {/* Company Information */}
+        <Grid item xs={12}>
+          <Paper
+            sx={{
+              p: { xs: 2, sm: 3 },
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              background:
+                'linear-gradient(135deg, rgba(25,118,210,0.08) 0%, rgba(25,118,210,0.02) 100%)',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <CurrencyExchangeIcon color="primary" />
+                  <Typography variant="h6" fontWeight={600}>
+                    Currency Rate Management
+                  </Typography>
+                  {!canConfigureRates && <Chip size="small" label="Read Only" />}
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Configure exchange rates used for commercial offer outputs and project currency conversions.
+                </Typography>
+              </Box>
+              <Button
+                variant="primary"
+                onClick={() => navigate('/settings/currency-rates')}
+                disabled={!canViewRates}
+              >
+                Open Currency Rates
+              </Button>
+              {!canConfigureRates && (
+                <Typography variant="caption" color="text.secondary" sx={{ width: '100%' }}>
+                  Requires CurrencyRates.Manage permission to edit rates.
+                </Typography>
+              )}
+            </Box>
+          </Paper>
+        </Grid>
+
         {/* Company Information */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: { xs: 2, sm: 3 } }}>

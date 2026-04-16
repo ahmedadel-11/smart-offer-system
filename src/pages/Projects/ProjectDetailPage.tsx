@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Grid, Paper, Typography, Divider, Badge } from '@mui/material';
+import { Box, Grid, Paper, Typography, Divider, Badge, Chip } from '@mui/material';
+import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
+import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import PercentOutlinedIcon from '@mui/icons-material/PercentOutlined';
+import PaidOutlinedIcon from '@mui/icons-material/PaidOutlined';
 import EditIcon from '@mui/icons-material/Edit';
 import DescriptionIcon from '@mui/icons-material/Description';
 import AddIcon from '@mui/icons-material/Add';
@@ -370,55 +375,176 @@ export const ProjectDetailPage: React.FC = () => {
             </Box>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Box
+            <Paper
               sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                p: 3,
-                backgroundColor: 'primary.light',
+                position: 'relative',
+                overflow: 'hidden',
+                p: { xs: 2.25, sm: 3 },
                 borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'rgba(25, 118, 210, 0.14)',
+                background: 'linear-gradient(180deg, rgba(227, 242, 253, 0.96) 0%, rgba(255, 255, 255, 1) 100%)',
+                boxShadow: '0px 14px 40px rgba(25, 118, 210, 0.12)',
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2">Panels</Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  {project.panels?.length || 0}
-                </Typography>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: -36,
+                  right: -36,
+                  width: 120,
+                  height: 120,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(25, 118, 210, 0.16) 0%, rgba(25, 118, 210, 0) 70%)',
+                  pointerEvents: 'none',
+                }}
+              />
+
+              <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(135deg, #1976D2 0%, #64B5F6 100%)',
+                      color: '#fff',
+                      boxShadow: '0px 10px 24px rgba(25, 118, 210, 0.28)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <AccountBalanceWalletOutlinedIcon fontSize="small" />
+                  </Box>
+                  <Box>
+                    <Typography variant="overline" sx={{ letterSpacing: 1.1, color: 'text.secondary', lineHeight: 1 }}>
+                      Financial Overview
+                    </Typography>
+                    <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
+                      Project Summary
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Chip
+                  label={project.currency}
+                  size="small"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'primary.dark',
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                    border: '1px solid',
+                    borderColor: 'rgba(25, 118, 210, 0.12)',
+                  }}
+                />
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2">Total Items</Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  {totalPriceData?.totalItems ?? project.totalItems ?? 0}
-                </Typography>
+
+              <Box
+                sx={{
+                  position: 'relative',
+                  display: 'grid',
+                  gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                  gap: 1.5,
+                }}
+              >
+                {[
+                  {
+                    label: 'Panels',
+                    value: project.panels?.length || 0,
+                    icon: <AppsOutlinedIcon fontSize="small" />,
+                    accent: 'primary.main',
+                    background: 'rgba(25, 118, 210, 0.08)',
+                  },
+                  {
+                    label: 'Total Items',
+                    value: totalPriceData?.totalItems ?? project.totalItems ?? 0,
+                    icon: <ReceiptLongOutlinedIcon fontSize="small" />,
+                    accent: 'text.primary',
+                    background: 'rgba(0, 0, 0, 0.04)',
+                  },
+                  {
+                    label: 'Total Cost',
+                    value: formatPrice(totalPriceData?.totalCost ?? 0, project.currency),
+                    icon: <PaidOutlinedIcon fontSize="small" />,
+                    accent: 'text.primary',
+                    background: 'rgba(76, 175, 80, 0.10)',
+                  },
+                  {
+                    label: 'Margin',
+                    value: formatPrice(totalPriceData?.totalMarginAmount ?? 0, project.currency),
+                    icon: <PercentOutlinedIcon fontSize="small" />,
+                    accent: 'success.main',
+                    background: 'rgba(76, 175, 80, 0.10)',
+                  },
+                ].map((item) => (
+                  <Box
+                    key={item.label}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'rgba(25, 118, 210, 0.10)',
+                      backgroundColor: item.background,
+                      backdropFilter: 'blur(8px)',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.75 }}>
+                      <Typography variant="body2" color="text.secondary" fontWeight={600}>
+                        {item.label}
+                      </Typography>
+                      <Box sx={{ color: item.accent, display: 'flex', alignItems: 'center' }}>{item.icon}</Box>
+                    </Box>
+                    <Typography
+                      variant="h6"
+                      fontWeight={700}
+                      sx={{
+                        color: item.accent,
+                        wordBreak: 'break-word',
+                        lineHeight: 1.2,
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
+                      }}
+                    >
+                      {item.value}
+                    </Typography>
+                  </Box>
+                ))}
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2">Total Cost</Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  {formatPrice(totalPriceData?.totalCost ?? 0, project.currency)}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body2">Margin</Typography>
-                <Typography variant="body1" fontWeight={600} color="success.main">
-                  {formatPrice(totalPriceData?.totalMarginAmount ?? 0, project.currency)}
-                </Typography>
-              </Box>
-              <Divider />
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="body1" fontWeight={500}>
-                  Total Price
-                </Typography>
+
+              <Divider sx={{ my: 2 }} />
+
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 2,
+                  p: 2,
+                  borderRadius: 2,
+                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.10) 0%, rgba(76, 175, 80, 0.10) 100%)',
+                  border: '1px solid',
+                  borderColor: 'rgba(25, 118, 210, 0.12)',
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mb: 0.25 }}>
+                    Total Price
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Final selling price for this project
+                  </Typography>
+                </Box>
                 <Typography
-                  variant="h5"
-                  fontWeight={700}
+                  variant="h4"
+                  fontWeight={800}
                   color="primary.main"
-                  sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}
+                  sx={{ fontSize: { xs: '1.35rem', sm: '1.8rem' }, lineHeight: 1 }}
                 >
                   {formatPrice(totalPriceData?.totalPrice ?? project.totalPrice ?? 0, project.currency)}
                 </Typography>
               </Box>
-            </Box>
+            </Paper>
           </Grid>
         </Grid>
       </Paper>

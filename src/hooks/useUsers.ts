@@ -1,6 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../services/userService';
-import type { CreateUserDto, UpdateUserDto, AssignRolesDto } from '../types';
+import type {
+  CreateUserDto,
+  UpdateUserDto,
+  AssignRolesDto,
+  SetUserPermissionOverrideDto,
+} from '../types';
 import toast from 'react-hot-toast';
 
 export const useUsers = () => {
@@ -107,6 +112,60 @@ export const useAssignRoles = () => {
     },
     onError: () => {
       toast.error('Failed to assign roles');
+    },
+  });
+};
+
+export const useUserPermissionOverrides = (id: string) => {
+  return useQuery({
+    queryKey: ['users', id, 'permission-overrides'],
+    queryFn: () => userService.getPermissionOverrides(id),
+    enabled: !!id,
+  });
+};
+
+export const useSetUserPermissionOverride = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: SetUserPermissionOverrideDto;
+    }) => userService.setPermissionOverride(id, data),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', id] });
+      queryClient.invalidateQueries({ queryKey: ['users', id, 'permission-overrides'] });
+      toast.success('Permission override saved');
+    },
+    onError: () => {
+      toast.error('Failed to save permission override');
+    },
+  });
+};
+
+export const useRemoveUserPermissionOverride = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      permissionId,
+    }: {
+      id: string;
+      permissionId: string;
+    }) => userService.removePermissionOverride(id, permissionId),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users', id] });
+      queryClient.invalidateQueries({ queryKey: ['users', id, 'permission-overrides'] });
+      toast.success('Permission override removed');
+    },
+    onError: () => {
+      toast.error('Failed to remove permission override');
     },
   });
 };

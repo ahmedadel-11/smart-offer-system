@@ -19,6 +19,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import DescriptionIcon from '@mui/icons-material/Description';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SettingsIcon from '@mui/icons-material/Settings';
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import BoltIcon from '@mui/icons-material/Bolt';
 import PeopleIcon from '@mui/icons-material/People';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -68,6 +69,7 @@ const adminItems: NavItem[] = [
 const settingsItems: NavItem[] = [
   { id: 'profile', label: 'Profile', icon: <PersonIcon />, path: '/profile' },
   { id: 'settings', label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+  { id: 'currency-rates', label: 'Currency Rates', icon: <CurrencyExchangeIcon />, path: '/settings/currency-rates' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -87,6 +89,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   );
   const visibleAdminItems = useMemo(
     () => adminItems.filter((item) => canAccessPage(user, item.path)),
+    [user]
+  );
+  const visibleSettingsItems = useMemo(
+    () => settingsItems.filter((item) => canAccessPage(user, item.path)),
     [user]
   );
   const showAdminSection = visibleAdminItems.length > 0;
@@ -199,7 +205,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
       <List sx={{ px: 1, py: 2 }}>
-        {settingsItems.map((item) => (
+        {visibleSettingsItems.map((item) => (
           <ListItem key={item.id} disablePadding>
             <ListItemButton
               onClick={() => handleNavigation(item.path)}

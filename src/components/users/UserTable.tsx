@@ -27,6 +27,7 @@ import { ActionMenu } from '../common/ActionMenu/ActionMenu';
 import type { MenuAction } from '../common/ActionMenu/ActionMenu';
 import EditIcon from '@mui/icons-material/Edit';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import TuneIcon from '@mui/icons-material/Tune';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import ToggleOnIcon from '@mui/icons-material/ToggleOn';
 import ToggleOffIcon from '@mui/icons-material/ToggleOff';
@@ -36,6 +37,7 @@ interface UserTableProps {
   users: UserDto[];
   onEdit: (user: UserDto) => void;
   onAssignRoles: (user: UserDto) => void;
+  onManagePermissionOverrides?: (user: UserDto) => void;
   onResetPassword: (user: UserDto) => void;
   onToggleStatus: (user: UserDto) => void;
   onDelete: (user: UserDto) => void;
@@ -45,6 +47,7 @@ export const UserTable: React.FC<UserTableProps> = ({
   users,
   onEdit,
   onAssignRoles,
+  onManagePermissionOverrides,
   onResetPassword,
   onToggleStatus,
   onDelete,
@@ -62,7 +65,8 @@ export const UserTable: React.FC<UserTableProps> = ({
       !search ||
       user.fullName.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.username.toLowerCase().includes(search.toLowerCase());
+      user.username.toLowerCase().includes(search.toLowerCase()) ||
+      (user.mobileNumber || '').toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus =
       statusFilter === 'all' ||
@@ -78,6 +82,15 @@ export const UserTable: React.FC<UserTableProps> = ({
   const getActions = (user: UserDto): MenuAction[] => [
     { label: 'Edit User', icon: <EditIcon fontSize="small" />, onClick: () => onEdit(user) },
     { label: 'Assign Roles', icon: <PersonAddIcon fontSize="small" />, onClick: () => onAssignRoles(user) },
+    ...(onManagePermissionOverrides
+      ? [
+          {
+            label: 'Permission Overrides',
+            icon: <TuneIcon fontSize="small" />,
+            onClick: () => onManagePermissionOverrides(user),
+          },
+        ]
+      : []),
     { label: 'Reset Password', icon: <LockResetIcon fontSize="small" />, onClick: () => onResetPassword(user), color: 'primary' as const },
     {
       label: user.isActive ? 'Deactivate' : 'Activate',
@@ -163,6 +176,8 @@ export const UserTable: React.FC<UserTableProps> = ({
               <TableCell>User</TableCell>
               <TableCell>Email</TableCell>
               <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Username</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Mobile Number</TableCell>
+              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Logo / Watermark</TableCell>
               <TableCell>Roles</TableCell>
               <TableCell>Status</TableCell>
               <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Last Login</TableCell>
@@ -172,7 +187,7 @@ export const UserTable: React.FC<UserTableProps> = ({
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
                   <Typography color="text.secondary">No users found</Typography>
                 </TableCell>
               </TableRow>
@@ -205,6 +220,25 @@ export const UserTable: React.FC<UserTableProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       {user.username}
                     </Typography>
+                  </TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {user.mobileNumber || '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                    {user.logoOrWatermark ? (
+                      <Tooltip title="Logo / Watermark image">
+                        <Box
+                          component="img"
+                          src={user.logoOrWatermark}
+                          alt="Logo / Watermark"
+                          sx={{ width: 70, height: 40, objectFit: 'contain', borderRadius: 0.75, border: '1px solid', borderColor: 'divider', p: 0.25 }}
+                        />
+                      </Tooltip>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>

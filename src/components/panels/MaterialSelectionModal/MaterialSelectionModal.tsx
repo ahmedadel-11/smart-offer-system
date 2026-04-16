@@ -90,14 +90,15 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
 
   const filteredMaterials = useMemo(() => {
     if (!materials) return [];
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
     return materials.filter((material) => {
-      if (searchTerm) {
-        const term = searchTerm.toLowerCase();
+      if (normalizedSearchTerm) {
         const matches =
-          material.itemCode.toLowerCase().includes(term) ||
-          material.description.toLowerCase().includes(term) ||
-          material.brand.toLowerCase().includes(term) ||
-          material.reference?.toLowerCase().includes(term);
+          (material.itemCode ?? '').toLowerCase().includes(normalizedSearchTerm) ||
+          (material.description ?? '').toLowerCase().includes(normalizedSearchTerm) ||
+          (material.brand ?? '').toLowerCase().includes(normalizedSearchTerm) ||
+          (material.reference ?? '').toLowerCase().includes(normalizedSearchTerm);
         if (!matches) return false;
       }
       if (selectedCategory && material.category !== selectedCategory) return false;

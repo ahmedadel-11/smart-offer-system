@@ -7,5 +7,6 @@ export * from './useRoles';
 export * from './usePermissions';
 export * from './useAuditLogs';
 export * from './useDashboard';
+export * from './useCurrencyRates';
 export * from './useOfferData';
 export * from './useProjectLockGuard';

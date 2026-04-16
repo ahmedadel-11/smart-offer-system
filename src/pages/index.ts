@@ -23,6 +23,7 @@ export { ImportPage } from './Import/ImportPage';
 
 // Settings
 export { SettingsPage } from './Settings/SettingsPage';
+export { CurrencyRatesPage } from './Settings/CurrencyRatesPage';
 
 // Auth
 export { LoginPage } from './Login/LoginPage';

@@ -19,6 +19,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const setCurrentUser = useCallback((nextUser: UserDto | null) => {
+    setUser(nextUser);
+    if (nextUser) {
+      localStorage.setItem('smartoffer_user', JSON.stringify(nextUser));
+    } else {
+      localStorage.removeItem('smartoffer_user');
+    }
+  }, []);
+
   // Load user from storage on mount
   useEffect(() => {
     const storedToken = authService.getStoredToken();
@@ -129,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       refreshToken,
+      setCurrentUser,
       hasRole,
       hasPermission,
       hasAnyRole,
@@ -137,7 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isSuperAdmin: superAdmin,
       isManagerOrAbove: managerOrAbove,
     }),
-    [user, token, isLoading, login, logout, refreshToken, hasRole, hasPermission, hasAnyRole, hasAnyPermission, hasAllPermissions, superAdmin, managerOrAbove]
+    [user, token, isLoading, login, logout, refreshToken, setCurrentUser, hasRole, hasPermission, hasAnyRole, hasAnyPermission, hasAllPermissions, superAdmin, managerOrAbove]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

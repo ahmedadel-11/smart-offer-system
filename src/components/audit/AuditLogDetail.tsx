@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import type { AuditLogDto } from '../../types';
+import { formatUtcToLocalDateTime } from '../../utils';
 
 interface AuditLogDetailProps {
   open: boolean;
@@ -76,7 +77,7 @@ export const AuditLogDetail: React.FC<AuditLogDetailProps> = ({ open, onClose, l
               Timestamp
             </Typography>
             <Typography variant="body2">
-              {new Date(log.timestamp).toLocaleString()}
+              {formatUtcToLocalDateTime(log.timestamp)}
             </Typography>
           </Box>
           <Box>

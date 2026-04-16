@@ -209,6 +209,17 @@ export interface UpdateProject {
   notes?: string;
 }
 
+export interface CurrencyRateDto {
+  currencyCode: string;
+  rateToEgp: number;
+  updatedAt: string;
+  updatedByUserId?: string | null;
+}
+
+export interface UpdateCurrencyRateDto {
+  rateToEgp: number;
+}
+
 // =====================
 // Panel Interfaces
 // =====================
@@ -803,6 +814,8 @@ export interface UserDto {
   fullName: string;
   email: string;
   username: string;
+  mobileNumber?: string | null;
+  logoOrWatermark?: string | null;
   isActive: boolean;
   createdAt: string;
   lastLoginAt: string | null;
@@ -815,6 +828,8 @@ export interface CreateUserDto {
   email: string;
   username: string;
   password: string;
+  mobileNumber?: string;
+  logoOrWatermark?: string;
   isActive: boolean;
   roleIds: string[];
 }
@@ -823,11 +838,27 @@ export interface UpdateUserDto {
   fullName: string;
   email: string;
   username: string;
+  mobileNumber?: string;
+  logoOrWatermark?: string;
   isActive: boolean;
 }
 
 export interface AssignRolesDto {
   roleIds: string[];
+}
+
+export interface SetUserPermissionOverrideDto {
+  permissionId: string;
+  isGranted: boolean;
+}
+
+export interface UserPermissionOverrideDto {
+  permissionId: string;
+  permissionName: string;
+  permissionCategory: string;
+  isGranted: boolean;
+  assignedAt: string;
+  assignedBy?: string | null;
 }
 
 // =====================
@@ -934,6 +965,7 @@ export interface AuthContextType {
   login: (request: LoginRequest) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
+  setCurrentUser: (user: UserDto | null) => void;
   hasRole: (role: string) => boolean;
   hasPermission: (permission: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;

@@ -38,6 +38,9 @@ const ImportPage = React.lazy(() =>
 const SettingsPage = React.lazy(() =>
   import('../pages/Settings/SettingsPage').then(m => ({ default: m.SettingsPage }))
 );
+const CurrencyRatesPage = React.lazy(() =>
+  import('../pages/Settings/CurrencyRatesPage').then(m => ({ default: m.CurrencyRatesPage }))
+);
 const LoginPage = React.lazy(() =>
   import('../pages/Login/LoginPage').then(m => ({ default: m.LoginPage }))
 );
@@ -193,6 +196,14 @@ const routes = [
       {
         path: 'settings',
         element: <SuspenseWrapper><SettingsPage /></SuspenseWrapper>,
+      },
+      {
+        path: 'settings/currency-rates',
+        element: (
+          <ProtectedRoute requiredPermissions={['CurrencyRates.View', 'CurrencyRates.Manage']}>
+            <SuspenseWrapper><CurrencyRatesPage /></SuspenseWrapper>
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'profile',

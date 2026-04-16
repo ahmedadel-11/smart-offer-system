@@ -11,6 +11,7 @@ export { roleService } from './roleService';
 export { permissionService } from './permissionService';
 export { auditLogService } from './auditLogService';
 export { dashboardService } from './dashboardService';
+export { currencyRateService } from './currencyRateService';
 export {
   SystemRoles,
   Permissions,

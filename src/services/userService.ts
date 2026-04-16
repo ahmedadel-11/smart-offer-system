@@ -4,6 +4,8 @@ import type {
   CreateUserDto,
   UpdateUserDto,
   AssignRolesDto,
+  SetUserPermissionOverrideDto,
+  UserPermissionOverrideDto,
 } from '../types';
 
 const ENDPOINT = '/users';
@@ -53,6 +55,19 @@ export const userService = {
   async getPermissions(id: string): Promise<string[]> {
     const response = await apiClient.get<string[]>(`${ENDPOINT}/${id}/permissions`);
     return response.data;
+  },
+
+  async getPermissionOverrides(id: string): Promise<UserPermissionOverrideDto[]> {
+    const response = await apiClient.get<UserPermissionOverrideDto[]>(`${ENDPOINT}/${id}/permission-overrides`);
+    return response.data;
+  },
+
+  async setPermissionOverride(id: string, data: SetUserPermissionOverrideDto): Promise<void> {
+    await apiClient.put(`${ENDPOINT}/${id}/permission-overrides`, data);
+  },
+
+  async removePermissionOverride(id: string, permissionId: string): Promise<void> {
+    await apiClient.delete(`${ENDPOINT}/${id}/permission-overrides/${permissionId}`);
   },
 };
 

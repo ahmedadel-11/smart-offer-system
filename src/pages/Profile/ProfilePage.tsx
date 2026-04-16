@@ -14,8 +14,11 @@ import {
   ListItemIcon,
   ListItemText,
   Alert,
+  TextField,
 } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import { PageHeader } from '../../components/layout/PageHeader/PageHeader';
@@ -25,6 +28,7 @@ import { PasswordInput } from '../../components/auth/PasswordInput';
 import { RoleBadge } from '../../components/shared/RoleBadge';
 import { useAuth } from '../../contexts/AuthContext';
 import { authService } from '../../services/authService';
+import { userService } from '../../services/userService';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,11 +53,47 @@ const changePasswordSchema = z
 
 type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
 
+const profileSchema = z.object({
+  fullName: z.string().min(2, 'At least 2 characters').max(200),
+  mobileNumber: z.string().max(20, 'Maximum 20 characters').optional(),
+  logoOrWatermark: z.string().optional(),
+});
+
+const MAX_LOGO_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+
+const fileToDataUrl = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Failed to read selected image'));
+    reader.readAsDataURL(file);
+  });
+};
+
+type ProfileForm = z.infer<typeof profileSchema>;
+
 export const ProfilePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, setCurrentUser } = useAuth();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  const {
+    control: profileControl,
+    handleSubmit: handleProfileSubmit,
+    reset: resetProfile,
+    setError: setProfileError,
+    clearErrors: clearProfileErrors,
+  } = useForm<ProfileForm>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      fullName: '',
+      mobileNumber: '',
+      logoOrWatermark: '',
+    },
+  });
 
   const { control, handleSubmit, watch, reset } = useForm<ChangePasswordForm>({
     resolver: zodResolver(changePasswordSchema),
@@ -78,6 +118,19 @@ export const ProfilePage: React.FC = () => {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  const brandingPreviewSx = {
+    width: '100%',
+    maxWidth: 260,
+    height: 96,
+    objectFit: 'contain',
+    objectPosition: 'left center',
+    borderRadius: 1,
+    border: '1px solid',
+    borderColor: 'divider',
+    backgroundColor: 'grey.50',
+    p: 1,
+  } as const;
 
   const onChangePassword = async (data: ChangePasswordForm) => {
     setIsChangingPassword(true);
@@ -104,6 +157,58 @@ export const ProfilePage: React.FC = () => {
     setChangePasswordOpen(false);
     setPasswordError(null);
     reset();
+  };
+
+  React.useEffect(() => {
+    if (user) {
+      resetProfile({
+        fullName: user.fullName,
+        mobileNumber: user.mobileNumber || '',
+        logoOrWatermark: user.logoOrWatermark || '',
+      });
+    }
+  }, [user, resetProfile]);
+
+  const onSaveProfile = async (data: ProfileForm) => {
+    if (!user) {
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const updatedUser = await userService.update(user.id, {
+        fullName: data.fullName.trim(),
+        email: user.email,
+        username: user.username,
+        isActive: user.isActive,
+        mobileNumber: data.mobileNumber?.trim() || undefined,
+        logoOrWatermark: data.logoOrWatermark || undefined,
+      });
+
+      setCurrentUser(updatedUser);
+      resetProfile({
+        fullName: updatedUser.fullName,
+        mobileNumber: updatedUser.mobileNumber || '',
+        logoOrWatermark: updatedUser.logoOrWatermark || '',
+      });
+      setIsEditingProfile(false);
+      toast.success('Profile updated successfully');
+    } catch {
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleCancelProfileEdit = () => {
+    if (user) {
+      resetProfile({
+        fullName: user.fullName,
+        mobileNumber: user.mobileNumber || '',
+        logoOrWatermark: user.logoOrWatermark || '',
+      });
+    }
+    setIsEditingProfile(false);
   };
 
   if (!user) return null;
@@ -162,7 +267,23 @@ export const ProfilePage: React.FC = () => {
             <Typography variant="caption" color="text.secondary">
               Full Name
             </Typography>
-            <Typography variant="body1">{user.fullName}</Typography>
+            {isEditingProfile ? (
+              <Controller
+                name="fullName"
+                control={profileControl}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    size="small"
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
+            ) : (
+              <Typography variant="body1">{user.fullName}</Typography>
+            )}
           </Grid>
           <Grid item xs={12} sm={6}>
             <Typography variant="caption" color="text.secondary">
@@ -175,6 +296,132 @@ export const ProfilePage: React.FC = () => {
               Username
             </Typography>
             <Typography variant="body1">{user.username}</Typography>
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="caption" color="text.secondary">
+              Mobile Number
+            </Typography>
+            {isEditingProfile ? (
+              <Controller
+                name="mobileNumber"
+                control={profileControl}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    size="small"
+                    placeholder="+201234567890"
+                    inputProps={{ maxLength: 20 }}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
+              />
+            ) : (
+              <Typography variant="body1">{user.mobileNumber || 'N/A'}</Typography>
+            )}
+          </Grid>
+          <Grid item xs={12}>
+            <Typography variant="caption" color="text.secondary">
+              Logo / Watermark Image
+            </Typography>
+            {isEditingProfile ? (
+              <Controller
+                name="logoOrWatermark"
+                control={profileControl}
+                render={({ field, fieldState }) => (
+                  <Stack spacing={1} sx={{ alignItems: 'flex-start', mt: 0.75 }}>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      <MuiButton
+                        component="label"
+                        variant="outlined"
+                        size="small"
+                        disabled={isSavingProfile}
+                      >
+                        Upload Image
+                        <input
+                          type="file"
+                          hidden
+                          accept="image/*"
+                          onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            event.currentTarget.value = '';
+
+                            if (!file) {
+                              return;
+                            }
+
+                            if (file.size > MAX_LOGO_FILE_SIZE_BYTES) {
+                              setProfileError('logoOrWatermark', {
+                                type: 'manual',
+                                message: 'Image size must be 2 MB or less',
+                              });
+                              return;
+                            }
+
+                            try {
+                              const dataUrl = await fileToDataUrl(file);
+                              clearProfileErrors('logoOrWatermark');
+                              field.onChange(dataUrl);
+                            } catch {
+                              setProfileError('logoOrWatermark', {
+                                type: 'manual',
+                                message: 'Failed to process selected image',
+                              });
+                            }
+                          }}
+                        />
+                      </MuiButton>
+
+                      {field.value && (
+                        <MuiButton
+                          variant="text"
+                          size="small"
+                          color="error"
+                          onClick={() => field.onChange('')}
+                          disabled={isSavingProfile}
+                        >
+                          Remove Image
+                        </MuiButton>
+                      )}
+                    </Stack>
+
+                    {field.value ? (
+                      <Box
+                        component="img"
+                        src={field.value}
+                        alt="Logo / Watermark Preview"
+                        sx={brandingPreviewSx}
+                      />
+                    ) : (
+                      <Box sx={{ ...brandingPreviewSx, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', borderStyle: 'dashed' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          No image selected
+                        </Typography>
+                      </Box>
+                    )}
+
+                    <Typography variant="caption" color={fieldState.error ? 'error.main' : 'text.secondary'}>
+                      {fieldState.error?.message || 'Used in generated offers as logo/watermark (max 2 MB).' }
+                    </Typography>
+                  </Stack>
+                )}
+              />
+            ) : (
+              user.logoOrWatermark ? (
+                <Box
+                  component="img"
+                  src={user.logoOrWatermark}
+                  alt="Logo / Watermark"
+                  sx={brandingPreviewSx}
+                />
+              ) : (
+                <Typography variant="body1">N/A</Typography>
+              )
+            )}
+            <Typography variant="caption" color="text.secondary">
+              This image appears on generated offers.
+            </Typography>
           </Grid>
           <Grid item xs={12} sm={6}>
             <Typography variant="caption" color="text.secondary">
@@ -211,13 +458,35 @@ export const ProfilePage: React.FC = () => {
 
         <Divider sx={{ my: 3 }} />
 
-        <MuiButton
-          variant="outlined"
-          startIcon={<LockIcon />}
-          onClick={() => setChangePasswordOpen(true)}
-        >
-          Change Password
-        </MuiButton>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+          {isEditingProfile ? (
+            <>
+              <MuiButton
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleProfileSubmit(onSaveProfile)}
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? 'Saving...' : 'Save Profile'}
+              </MuiButton>
+              <MuiButton variant="outlined" onClick={handleCancelProfileEdit} disabled={isSavingProfile}>
+                Cancel
+              </MuiButton>
+            </>
+          ) : (
+            <MuiButton variant="outlined" startIcon={<EditIcon />} onClick={() => setIsEditingProfile(true)}>
+              Edit Profile
+            </MuiButton>
+          )}
+
+          <MuiButton
+            variant="outlined"
+            startIcon={<LockIcon />}
+            onClick={() => setChangePasswordOpen(true)}
+          >
+            Change Password
+          </MuiButton>
+        </Stack>
       </Paper>
 
       {/* Change Password Modal */}

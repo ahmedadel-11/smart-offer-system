@@ -7,6 +7,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 
 interface ProjectListProps {
   projects: Project[];
+  ownerNameById?: Record<string, string>;
   loading?: boolean;
   onEdit?: (project: Project) => void;
   onDelete?: (project: Project) => void;
@@ -17,6 +18,7 @@ interface ProjectListProps {
 
 export const ProjectList: React.FC<ProjectListProps> = ({
   projects,
+  ownerNameById,
   loading = false,
   onEdit,
   onDelete,
@@ -46,6 +48,7 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           <Grid item xs={12} sm={6} md={4} lg={3} key={project.projectId}>
             <ProjectCard
               project={project}
+              ownerName={project.createdByUserId ? ownerNameById?.[project.createdByUserId] : undefined}
               onEdit={onEdit}
               onDelete={onDelete}
               onDuplicate={onDuplicate}

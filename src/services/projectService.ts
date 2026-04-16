@@ -15,17 +15,43 @@ import {
 
 const ENDPOINT = '/projects';
 
+type ProjectApiShape = Partial<Project> & {
+  createdDate?: string | null;
+  updatedDate?: string | null;
+};
+
+type ProjectDetailApiShape = Partial<ProjectDetail> & {
+  createdDate?: string | null;
+  updatedDate?: string | null;
+};
+
+const normalizeProject = (project: ProjectApiShape): Project => {
+  return {
+    ...(project as Project),
+    createdAt: project.createdAt || project.createdDate || '',
+    updatedAt: project.updatedAt ?? project.updatedDate ?? null,
+  };
+};
+
+const normalizeProjectDetail = (project: ProjectDetailApiShape): ProjectDetail => {
+  return {
+    ...(project as ProjectDetail),
+    createdAt: project.createdAt || project.createdDate || '',
+    updatedAt: project.updatedAt ?? project.updatedDate ?? null,
+  };
+};
+
 export const projectService = {
   // Get all projects
   async getAll(): Promise<Project[]> {
-    const response = await apiClient.get<Project[]>(ENDPOINT);
-    return response.data;
+    const response = await apiClient.get<ProjectApiShape[]>(ENDPOINT);
+    return response.data.map(normalizeProject);
   },
 
   // Get project by ID with panels
   async getById(id: number): Promise<ProjectDetail> {
-    const response = await apiClient.get<ProjectDetail>(`${ENDPOINT}/${id}`);
-    return response.data;
+    const response = await apiClient.get<ProjectDetailApiShape>(`${ENDPOINT}/${id}`);
+    return normalizeProjectDetail(response.data);
   },
 
   // Get project summary (pricing)
@@ -36,28 +62,28 @@ export const projectService = {
 
   // Get projects by customer
   async getByCustomer(customer: string): Promise<Project[]> {
-    const response = await apiClient.get<Project[]>(
+    const response = await apiClient.get<ProjectApiShape[]>(
       `${ENDPOINT}/customer/${encodeURIComponent(customer)}`
     );
-    return response.data;
+    return response.data.map(normalizeProject);
   },
 
   // Get projects by status
   async getByStatus(status: number): Promise<Project[]> {
-    const response = await apiClient.get<Project[]>(`${ENDPOINT}/status/${status}`);
-    return response.data;
+    const response = await apiClient.get<ProjectApiShape[]>(`${ENDPOINT}/status/${status}`);
+    return response.data.map(normalizeProject);
   },
 
   // Create project
   async create(data: CreateProject): Promise<Project> {
-    const response = await apiClient.post<Project>(ENDPOINT, data);
-    return response.data;
+    const response = await apiClient.post<ProjectApiShape>(ENDPOINT, data);
+    return normalizeProject(response.data);
   },
 
   // Update project
   async update(id: number, data: UpdateProject): Promise<Project> {
-    const response = await apiClient.put<Project>(`${ENDPOINT}/${id}`, data);
-    return response.data;
+    const response = await apiClient.put<ProjectApiShape>(`${ENDPOINT}/${id}`, data);
+    return normalizeProject(response.data);
   },
 
   // Delete project
@@ -117,8 +143,8 @@ export const projectService = {
 
   // Change project status
   async changeStatus(id: number, dto: ChangeStatusDto): Promise<Project> {
-    const response = await apiClient.put<Project>(`${ENDPOINT}/${id}/status`, dto);
-    return response.data;
+    const response = await apiClient.put<ProjectApiShape>(`${ENDPOINT}/${id}/status`, dto);
+    return normalizeProject(response.data);
   },
 
   // Add collaborator to project
@@ -146,20 +172,20 @@ export const projectService = {
 
   // Lock project
   async lock(id: number): Promise<Project> {
-    const response = await apiClient.post<Project>(`${ENDPOINT}/${id}/lock`);
-    return response.data;
+    const response = await apiClient.post<ProjectApiShape>(`${ENDPOINT}/${id}/lock`);
+    return normalizeProject(response.data);
   },
 
   // Unlock project
   async unlock(id: number): Promise<Project> {
-    const response = await apiClient.post<Project>(`${ENDPOINT}/${id}/unlock`);
-    return response.data;
+    const response = await apiClient.post<ProjectApiShape>(`${ENDPOINT}/${id}/unlock`);
+    return normalizeProject(response.data);
   },
 
   // Clone project (deep copy)
   async clone(id: number): Promise<Project> {
-    const response = await apiClient.post<Project>(`${ENDPOINT}/${id}/clone`);
-    return response.data;
+    const response = await apiClient.post<ProjectApiShape>(`${ENDPOINT}/${id}/clone`);
+    return normalizeProject(response.data);
   },
 
   // Get project changelog (audit trail)
@@ -176,10 +202,10 @@ export const projectService = {
 
   // Search projects (full-text)
   async search(term: string): Promise<Project[]> {
-    const response = await apiClient.get<Project[]>(`${ENDPOINT}/search`, {
+    const response = await apiClient.get<ProjectApiShape[]>(`${ENDPOINT}/search`, {
       params: { q: term },
     });
-    return response.data;
+    return response.data.map(normalizeProject);
   },
 
   // Export project material list (Excel)

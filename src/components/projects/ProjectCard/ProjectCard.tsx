@@ -16,6 +16,7 @@ import { Project } from '../../../types';
 
 interface ProjectCardProps {
   project: Project;
+  ownerName?: string;
   panelCount?: number;
   totalPrice?: number;
   collaboratorCount?: number;
@@ -27,6 +28,7 @@ interface ProjectCardProps {
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
   project,
+  ownerName,
   panelCount = 0,
   totalPrice = 0,
   collaboratorCount = 0,
@@ -62,10 +64,18 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   const getOwnerInitials = () => {
-    if (project.createdByUserId) {
-      return project.createdByUserId.substring(0, 2).toUpperCase();
+    const source = ownerName?.trim() || project.createdByUserId || '';
+    if (!source) return '?';
+
+    if (ownerName) {
+      const parts = ownerName.trim().split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      }
+      return ownerName.slice(0, 2).toUpperCase();
     }
-    return '?';
+
+    return source.substring(0, 2).toUpperCase();
   };
 
   const actions: MenuAction[] = [
@@ -169,11 +179,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {project.createdByUserId && (
-              <Tooltip title="Owner">
+              <Tooltip title={ownerName ? `Owner: ${ownerName}` : `Owner ID: ${project.createdByUserId}`}>
                 <Avatar sx={{ width: 22, height: 22, fontSize: 10, bgcolor: 'grey.400' }}>
                   {getOwnerInitials()}
                 </Avatar>
               </Tooltip>
+            )}
+            {ownerName && (
+              <Typography variant="caption" color="text.secondary" sx={{ maxWidth: 100 }} noWrap>
+                {ownerName}
+              </Typography>
             )}
             <Typography variant="caption" color="text.secondary">
               {formatDate(project.createdAt)}
