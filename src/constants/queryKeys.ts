@@ -18,6 +18,18 @@ export const queryKeys = {
     brands: () => [...queryKeys.materials.all, 'brands'] as const,
   },
 
+  // Packages
+  packages: {
+    all: ['packages'] as const,
+    lists: () => [...queryKeys.packages.all, 'list'] as const,
+    list: () => [...queryKeys.packages.lists()] as const,
+    details: () => [...queryKeys.packages.all, 'detail'] as const,
+    detail: (id: string | number) =>
+      [...queryKeys.packages.details(), id] as const,
+    searches: () => [...queryKeys.packages.all, 'search'] as const,
+    search: (term: string) => [...queryKeys.packages.searches(), term] as const,
+  },
+
   // Projects
   projects: {
     all: ['projects'] as const,

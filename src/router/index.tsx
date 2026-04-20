@@ -20,6 +20,18 @@ const ProjectDetailPage = React.lazy(() =>
 const ProjectEditPage = React.lazy(() =>
   import('../pages/Projects/ProjectEditPage').then(m => ({ default: m.ProjectEditPage }))
 );
+const PackagesPage = React.lazy(() =>
+  import('../pages/Packages/PackagesPage').then(m => ({ default: m.PackagesPage }))
+);
+const PackageCreatePage = React.lazy(() =>
+  import('../pages/Packages/PackageCreatePage').then(m => ({ default: m.PackageCreatePage }))
+);
+const PackageEditPage = React.lazy(() =>
+  import('../pages/Packages/PackageEditPage').then(m => ({ default: m.PackageEditPage }))
+);
+const PackageDetailPage = React.lazy(() =>
+  import('../pages/Packages/PackageDetailPage').then(m => ({ default: m.PackageDetailPage }))
+);
 const MaterialsPage = React.lazy(() =>
   import('../pages/Materials/MaterialsPage').then(m => ({ default: m.MaterialsPage }))
 );
@@ -161,6 +173,44 @@ const routes = [
             element: (
               <ProtectedRoute requiredPermissions={['Panels.View', 'Panels.Edit', 'Panels.Create']}>
                 <SuspenseWrapper><PanelDesignerPage /></SuspenseWrapper>
+              </ProtectedRoute>
+            ),
+          },
+        ],
+      },
+      // Packages
+      {
+        path: 'packages',
+        children: [
+          {
+            index: true,
+            element: (
+              <ProtectedRoute requiredPermissions={['packages:view']}>
+                <SuspenseWrapper><PackagesPage /></SuspenseWrapper>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: 'new',
+            element: (
+              <ProtectedRoute requiredPermissions={['packages:create']}>
+                <SuspenseWrapper><PackageCreatePage /></SuspenseWrapper>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: ':id',
+            element: (
+              <ProtectedRoute requiredPermissions={['packages:view']}>
+                <SuspenseWrapper><PackageDetailPage /></SuspenseWrapper>
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: ':id/edit',
+            element: (
+              <ProtectedRoute requiredPermissions={['packages:edit']}>
+                <SuspenseWrapper><PackageEditPage /></SuspenseWrapper>
               </ProtectedRoute>
             ),
           },

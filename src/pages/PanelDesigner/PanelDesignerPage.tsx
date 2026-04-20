@@ -53,12 +53,14 @@ import {
   useRemovePanelCollaborator,
   useUsers,
   useBusbarCablesWorksheet,
+  usePackages,
   useProjectLockGuard,
 } from '../../hooks';
 import {
   PanelItem,
   PanelItemType,
   Material,
+  PackageDto,
   ZoneType,
 } from '../../types';
 import { panelService } from '../../services';
@@ -75,6 +77,43 @@ const BusbarCablesWorksheetCard = React.lazy(() =>
     default: module.BusbarCablesWorksheetCard,
   }))
 );
+
+const PACKAGE_NOTE_PREFIX = 'SMART_PACKAGE::';
+
+interface PackageItemMetadata {
+  packageInstanceId: string;
+  packageId: number;
+  packageName: string;
+  packageItemId: number;
+  packageItemQuantity: number;
+  packageQuantity: number;
+}
+
+interface PackageGroupView {
+  packageInstanceId: string;
+  packageId: number;
+  packageName: string;
+  quantity: number;
+  items: PanelItem[];
+}
+
+const createPackageInstanceId = (packageId: number) =>
+  `${packageId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+const createPackageNotes = (metadata: PackageItemMetadata) =>
+  `${PACKAGE_NOTE_PREFIX}${JSON.stringify(metadata)}`;
+
+const parsePackageNotes = (notes?: string | null): PackageItemMetadata | null => {
+  if (!notes || !notes.startsWith(PACKAGE_NOTE_PREFIX)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(notes.slice(PACKAGE_NOTE_PREFIX.length)) as PackageItemMetadata;
+  } catch {
+    return null;
+  }
+};
 
 export const PanelDesignerPage: React.FC = () => {
   const { id: projectId, panelId: panelIdStr } = useParams<{ id: string; panelId: string }>();
@@ -99,6 +138,7 @@ export const PanelDesignerPage: React.FC = () => {
   const { data: materials } = useMaterials();
   const { data: categories } = useCategories();
   const { data: brands } = useBrands();
+  const { data: packages } = usePackages();
   const { data: busbarWorksheet } = useBusbarCablesWorksheet(selectedPanelId, busbarWorksheetOpen);
   const busbarSystemMaterial = useMemo(
     () => materials?.find((material) => material.itemCode === 'SYS-BUSBAR-CABLES'),
@@ -272,6 +312,47 @@ export const PanelDesignerPage: React.FC = () => {
     };
   }, [groupedItems]);
 
+  const groupedZones = useMemo(() => {
+    const buildGroupedZone = (items: PanelItem[]) => {
+      const directItems: PanelItem[] = [];
+      const packageGroups = new Map<string, PackageGroupView>();
+
+      for (const item of items) {
+        const packageMetadata = parsePackageNotes(item.notes);
+
+        if (!packageMetadata) {
+          directItems.push(item);
+          continue;
+        }
+
+        const existingGroup = packageGroups.get(packageMetadata.packageInstanceId);
+        if (existingGroup) {
+          existingGroup.items.push(item);
+        } else {
+          packageGroups.set(packageMetadata.packageInstanceId, {
+            packageInstanceId: packageMetadata.packageInstanceId,
+            packageId: packageMetadata.packageId,
+            packageName: packageMetadata.packageName,
+            quantity: packageMetadata.packageQuantity,
+            items: [item],
+          });
+        }
+      }
+
+      return {
+        directItems,
+        packageGroups: Array.from(packageGroups.values()),
+      };
+    };
+
+    return {
+      incoming: buildGroupedZone(zones.incoming),
+      outgoing: buildGroupedZone(zones.outgoing),
+      enclosure: buildGroupedZone(zones.enclosure),
+      busbarAndCables: buildGroupedZone(zones.busbarAndCables),
+    };
+  }, [zones]);
+
   // Open material selection modal for a specific zone
   const handleOpenAddItems = (zone: ZoneType) => {
     if (!ensurePanelUnlocked()) {
@@ -319,6 +400,47 @@ export const PanelDesignerPage: React.FC = () => {
     }
   };
 
+  const handleAddPackages = async (
+    selections: { packageItem: PackageDto; quantity: number }[]
+  ) => {
+    if (!activeZone) return;
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    const itemType = activeZone !== 'unassigned' ? zoneToItemType[activeZone as ActiveZoneType] : undefined;
+
+    try {
+      for (const { packageItem, quantity } of selections) {
+        const packageInstanceId = createPackageInstanceId(packageItem.packageId);
+
+        for (const packageMaterial of packageItem.items) {
+          await addMaterialMutation.mutateAsync({
+            panelId: selectedPanelId,
+            materialId: packageMaterial.materialId,
+            quantity: packageMaterial.quantity * quantity,
+            itemType: itemType ?? undefined,
+            notes: createPackageNotes({
+              packageInstanceId,
+              packageId: packageItem.packageId,
+              packageName: packageItem.packageName,
+              packageItemId: packageMaterial.packageItemId,
+              packageItemQuantity: packageMaterial.quantity,
+              packageQuantity: quantity,
+            }),
+          });
+        }
+      }
+
+      toast.success(
+        `Added ${selections.length} package${selections.length !== 1 ? 's' : ''} to ${getZoneConfig(activeZone).label}`
+      );
+      refetchItems();
+    } catch (error) {
+      toast.error('Failed to add packages');
+    }
+  };
+
   // Remove item from panel
   const handleRemoveItem = async (itemId: number) => {
     if (!ensurePanelUnlocked()) {
@@ -331,6 +453,31 @@ export const PanelDesignerPage: React.FC = () => {
       refetchItems();
     } catch (error) {
       toast.error('Failed to remove item');
+    }
+  };
+
+  const handleRemovePackage = async (packageInstanceId: string) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    const allItems = Object.values(zones).flat();
+    const packageItems = allItems.filter(
+      (item) => parsePackageNotes(item.notes)?.packageInstanceId === packageInstanceId
+    );
+
+    if (packageItems.length === 0) {
+      return;
+    }
+
+    try {
+      for (const item of packageItems) {
+        await deleteItemMutation.mutateAsync(item.panelItemId);
+      }
+      toast.success('Package removed');
+      refetchItems();
+    } catch (error) {
+      toast.error('Failed to remove package');
     }
   };
 
@@ -353,6 +500,86 @@ export const PanelDesignerPage: React.FC = () => {
       refetchItems();
     } catch (error) {
       toast.error('Failed to update quantity');
+    }
+  };
+
+  const handlePackageQuantityChange = async (packageInstanceId: string, quantity: number) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    const allItems = Object.values(zones).flat();
+    const packageItems = allItems.filter(
+      (item) => parsePackageNotes(item.notes)?.packageInstanceId === packageInstanceId
+    );
+
+    if (packageItems.length === 0) {
+      return;
+    }
+
+    try {
+      for (const item of packageItems) {
+        const metadata = parsePackageNotes(item.notes);
+        if (!metadata) {
+          continue;
+        }
+
+        await updateItemMutation.mutateAsync({
+          id: item.panelItemId,
+          data: {
+            quantity: metadata.packageItemQuantity * quantity,
+            itemType: item.itemType ?? undefined,
+            notes: createPackageNotes({
+              ...metadata,
+              packageQuantity: quantity,
+            }),
+          },
+        });
+      }
+
+      toast.success('Package quantity updated');
+      refetchItems();
+    } catch (error) {
+      toast.error('Failed to update package quantity');
+    }
+  };
+
+  const handlePackageItemQuantityChange = async (itemId: number, quantity: number) => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    const allItems = Object.values(zones).flat();
+    const currentItem = allItems.find((item) => item.panelItemId === itemId);
+
+    if (!currentItem) {
+      return;
+    }
+
+    const metadata = parsePackageNotes(currentItem.notes);
+    if (!metadata) {
+      return;
+    }
+
+    const packageQuantity = metadata.packageQuantity || 1;
+
+    try {
+      await updateItemMutation.mutateAsync({
+        id: itemId,
+        data: {
+          quantity,
+          itemType: currentItem.itemType ?? undefined,
+          notes: createPackageNotes({
+            ...metadata,
+            packageItemQuantity: quantity / packageQuantity,
+          }),
+        },
+      });
+
+      toast.success('Package item quantity updated');
+      refetchItems();
+    } catch {
+      toast.error('Failed to update package item quantity');
     }
   };
 
@@ -659,11 +886,15 @@ export const PanelDesignerPage: React.FC = () => {
             <ItemTypeZone
               id="incoming"
               label={getZoneConfig('incoming').label}
-              items={zones.incoming}
+              items={groupedZones.incoming.directItems}
+              packageGroups={groupedZones.incoming.packageGroups}
               color={getZoneConfig('incoming').color}
               description={getZoneConfig('incoming').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onPackageItemQuantityChange={canEditPanel ? handlePackageItemQuantityChange : undefined}
+              onPackageQuantityChange={canEditPanel ? handlePackageQuantityChange : undefined}
+              onPackageRemove={canEditPanel ? handleRemovePackage : undefined}
               onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('incoming') : undefined}
               onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
@@ -672,11 +903,15 @@ export const PanelDesignerPage: React.FC = () => {
             <ItemTypeZone
               id="outgoing"
               label={getZoneConfig('outgoing').label}
-              items={zones.outgoing}
+              items={groupedZones.outgoing.directItems}
+              packageGroups={groupedZones.outgoing.packageGroups}
               color={getZoneConfig('outgoing').color}
               description={getZoneConfig('outgoing').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onPackageItemQuantityChange={canEditPanel ? handlePackageItemQuantityChange : undefined}
+              onPackageQuantityChange={canEditPanel ? handlePackageQuantityChange : undefined}
+              onPackageRemove={canEditPanel ? handleRemovePackage : undefined}
               onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('outgoing') : undefined}
               onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
@@ -685,11 +920,15 @@ export const PanelDesignerPage: React.FC = () => {
             <ItemTypeZone
               id="enclosure"
               label={getZoneConfig('enclosure').label}
-              items={zones.enclosure}
+              items={groupedZones.enclosure.directItems}
+              packageGroups={groupedZones.enclosure.packageGroups}
               color={getZoneConfig('enclosure').color}
               description={getZoneConfig('enclosure').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
               onQuantityChange={canEditPanel ? handleQuantityChange : undefined}
+              onPackageItemQuantityChange={canEditPanel ? handlePackageItemQuantityChange : undefined}
+              onPackageQuantityChange={canEditPanel ? handlePackageQuantityChange : undefined}
+              onPackageRemove={canEditPanel ? handleRemovePackage : undefined}
               onAddItems={canEditPanel && !isProjectLocked ? () => handleOpenAddItems('enclosure') : undefined}
               onOverrideChange={canModifyPricing && !isProjectLocked ? handleOverrideChange : undefined}
             />
@@ -698,10 +937,14 @@ export const PanelDesignerPage: React.FC = () => {
             <ItemTypeZone
               id="busbarAndCables"
               label={getZoneConfig('busbarAndCables').label}
-              items={zones.busbarAndCables}
+              items={groupedZones.busbarAndCables.directItems}
+              packageGroups={groupedZones.busbarAndCables.packageGroups}
               color={getZoneConfig('busbarAndCables').color}
               description={getZoneConfig('busbarAndCables').description}
               onRemove={canEditPanel ? handleRemoveItem : undefined}
+              onPackageItemQuantityChange={canEditPanel ? handlePackageItemQuantityChange : undefined}
+              onPackageQuantityChange={canEditPanel ? handlePackageQuantityChange : undefined}
+              onPackageRemove={canEditPanel ? handleRemovePackage : undefined}
               onAddItems={canEditPanel && !isProjectLocked ? handleOpenBusbarWorksheet : undefined}
               addButtonLabel={zones.busbarAndCables.length > 0 ? 'Edit Worksheet' : 'Open Worksheet'}
               emptyStateLabel={zones.busbarAndCables.length > 0 ? 'Open the worksheet to edit it' : 'Click to open worksheet'}
@@ -734,7 +977,9 @@ export const PanelDesignerPage: React.FC = () => {
           materials={materials || []}
           categories={categories || []}
           brands={brands || []}
+          packages={packages || []}
           onAddMaterials={handleAddMaterials}
+          onAddPackages={handleAddPackages}
           loading={addMaterialMutation.isPending}
         />
       )}

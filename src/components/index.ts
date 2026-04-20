@@ -2,6 +2,7 @@ export * from './common';
 export * from './layout';
 export * from './materials';
 export * from './projects';
+export * from './packages';
 export * from './panels';
 export * from './auth';
 export * from './shared';

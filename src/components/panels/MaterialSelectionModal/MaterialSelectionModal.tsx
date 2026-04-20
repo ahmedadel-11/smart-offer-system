@@ -26,7 +26,10 @@ import ClearIcon from '@mui/icons-material/Clear';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import { Material } from '../../../types';
+import { Material, PackageDto } from '../../../types';
+
+export type MaterialSelectionItem = { material: Material; quantity: number };
+export type PackageSelectionItem = { packageItem: PackageDto; quantity: number };
 
 interface MaterialSelectionModalProps {
   open: boolean;
@@ -36,7 +39,9 @@ interface MaterialSelectionModalProps {
   materials: Material[];
   categories: string[];
   brands: string[];
-  onAddMaterials: (selections: { material: Material; quantity: number }[]) => void;
+  packages?: PackageDto[];
+  onAddMaterials: (selections: MaterialSelectionItem[]) => void;
+  onAddPackages?: (selections: PackageSelectionItem[]) => void;
   loading?: boolean;
 }
 
@@ -48,7 +53,9 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
   materials,
   categories,
   brands,
+  packages,
   onAddMaterials,
+  onAddPackages,
   loading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -57,7 +64,18 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
   const [selectedRatedCurrent, setSelectedRatedCurrent] = useState('');
   const [selectedIsc, setSelectedIsc] = useState('');
   const [selectedNoOfPoles, setSelectedNoOfPoles] = useState('');
-  const [selections, setSelections] = useState<Record<number, number>>({}); // materialId -> quantity
+  const [materialSelections, setMaterialSelections] = useState<Record<number, number>>({});
+  const [packageSelections, setPackageSelections] = useState<Record<number, number>>({});
+
+  const categoryOptions = useMemo(() => {
+    const values = new Set(categories ?? []);
+    if (packages !== undefined) {
+      values.add('Packages');
+    }
+    return Array.from(values);
+  }, [categories, packages]);
+
+  const isPackageCategory = selectedCategory === 'Packages';
 
   // Extract unique filter options from materials
   const ratedCurrentOptions = useMemo(() => {
@@ -89,7 +107,7 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
   }, [materials]);
 
   const filteredMaterials = useMemo(() => {
-    if (!materials) return [];
+    if (!materials || isPackageCategory) return [];
     const normalizedSearchTerm = searchTerm.trim().toLowerCase();
 
     return materials.filter((material) => {
@@ -108,10 +126,30 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
       if (selectedNoOfPoles && material.noOfPoles !== Number(selectedNoOfPoles)) return false;
       return true;
     });
-  }, [materials, searchTerm, selectedCategory, selectedBrand, selectedRatedCurrent, selectedIsc, selectedNoOfPoles]);
+  }, [materials, searchTerm, selectedCategory, selectedBrand, selectedRatedCurrent, selectedIsc, selectedNoOfPoles, isPackageCategory]);
+
+  const filteredPackages = useMemo(() => {
+    if (!packages || !isPackageCategory) return [];
+
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase();
+
+    return packages.filter((pkg) => {
+      if (!normalizedSearchTerm) return true;
+
+      return (
+        pkg.packageName.toLowerCase().includes(normalizedSearchTerm) ||
+        (pkg.description ?? '').toLowerCase().includes(normalizedSearchTerm) ||
+        pkg.items.some(
+          (item) =>
+            (item.materialCode ?? '').toLowerCase().includes(normalizedSearchTerm) ||
+            (item.materialDescription ?? '').toLowerCase().includes(normalizedSearchTerm)
+        )
+      );
+    });
+  }, [packages, searchTerm, isPackageCategory]);
 
   const toggleMaterial = (materialId: number) => {
-    setSelections((prev) => {
+    setMaterialSelections((prev) => {
       if (prev[materialId] !== undefined) {
         const { [materialId]: _, ...rest } = prev;
         return rest;
@@ -120,19 +158,47 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
     });
   };
 
-  const updateQuantity = (materialId: number, quantity: number) => {
-    if (quantity < 1) return;
-    setSelections((prev) => ({ ...prev, [materialId]: quantity }));
+  const togglePackage = (packageId: number) => {
+    setPackageSelections((prev) => {
+      if (prev[packageId] !== undefined) {
+        const { [packageId]: _, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [packageId]: 1 };
+    });
   };
 
-  const selectedCount = Object.keys(selections).length;
+  const updateQuantity = (materialId: number, quantity: number) => {
+    if (quantity < 1) return;
+    setMaterialSelections((prev) => ({ ...prev, [materialId]: quantity }));
+  };
+
+  const updatePackageQuantity = (packageId: number, quantity: number) => {
+    if (quantity < 1) return;
+    setPackageSelections((prev) => ({ ...prev, [packageId]: quantity }));
+  };
+
+  const selectedCount = isPackageCategory
+    ? Object.keys(packageSelections).length
+    : Object.keys(materialSelections).length;
 
   const handleConfirm = () => {
-    const result = Object.entries(selections).map(([id, quantity]) => {
-      const material = materials.find((m) => m.materialId === Number(id))!;
-      return { material, quantity };
-    });
-    onAddMaterials(result);
+    if (isPackageCategory) {
+      const result = Object.entries(packageSelections).map(([id, quantity]) => {
+        const packageItem = packages?.find((pkg) => pkg.packageId === Number(id));
+        return packageItem ? { packageItem, quantity } : null;
+      }).filter(Boolean) as PackageSelectionItem[];
+
+      if (result.length > 0) {
+        onAddPackages?.(result);
+      }
+    } else {
+      const result = Object.entries(materialSelections).map(([id, quantity]) => {
+        const material = materials.find((m) => m.materialId === Number(id))!;
+        return { material, quantity };
+      });
+      onAddMaterials(result);
+    }
     handleClose();
   };
 
@@ -143,11 +209,12 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
     setSelectedRatedCurrent('');
     setSelectedIsc('');
     setSelectedNoOfPoles('');
-    setSelections({});
+    setMaterialSelections({});
+    setPackageSelections({});
     onClose();
   };
 
-  const hasActiveFilters = searchTerm || selectedCategory || selectedBrand || selectedRatedCurrent || selectedIsc || selectedNoOfPoles;
+  const hasActiveFilters = searchTerm || selectedCategory || (!isPackageCategory && (selectedBrand || selectedRatedCurrent || selectedIsc || selectedNoOfPoles));
 
   const handleClearFilters = () => {
     setSearchTerm('');
@@ -222,73 +289,79 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
               <Select
                 value={selectedCategory}
                 label="Category"
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                }}
               >
                 <MenuItem value="">All Categories</MenuItem>
-                {categories?.map((cat) => (
+                  {categoryOptions.map((cat) => (
                   <MenuItem key={cat} value={cat}>{cat}</MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Brand</InputLabel>
-              <Select
-                value={selectedBrand}
-                label="Brand"
-                onChange={(e) => setSelectedBrand(e.target.value)}
-              >
-                <MenuItem value="">All Brands</MenuItem>
-                {brands?.map((brand) => (
-                  <MenuItem key={brand} value={brand}>{brand}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+              {!isPackageCategory && (
+                <FormControl size="small" sx={{ flex: 1 }}>
+                  <InputLabel>Brand</InputLabel>
+                  <Select
+                    value={selectedBrand}
+                    label="Brand"
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                  >
+                    <MenuItem value="">All Brands</MenuItem>
+                    {brands?.map((brand) => (
+                      <MenuItem key={brand} value={brand}>{brand}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
           </Box>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Rated Current</InputLabel>
-              <Select
-                value={selectedRatedCurrent}
-                label="Rated Current"
-                onChange={(e) => setSelectedRatedCurrent(e.target.value)}
-              >
-                <MenuItem value="">All</MenuItem>
-                {ratedCurrentOptions.map((val) => (
-                  <MenuItem key={val} value={val}>{val}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            {!isPackageCategory && (
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <FormControl size="small" sx={{ flex: 1 }}>
+                  <InputLabel>Rated Current</InputLabel>
+                  <Select
+                    value={selectedRatedCurrent}
+                    label="Rated Current"
+                    onChange={(e) => setSelectedRatedCurrent(e.target.value)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {ratedCurrentOptions.map((val) => (
+                      <MenuItem key={val} value={val}>{val}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>Isc</InputLabel>
-              <Select
-                value={selectedIsc}
-                label="Isc"
-                onChange={(e) => setSelectedIsc(e.target.value)}
-              >
-                <MenuItem value="">All</MenuItem>
-                {iscOptions.map((val) => (
-                  <MenuItem key={val} value={val}>{val}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                <FormControl size="small" sx={{ flex: 1 }}>
+                  <InputLabel>Isc</InputLabel>
+                  <Select
+                    value={selectedIsc}
+                    label="Isc"
+                    onChange={(e) => setSelectedIsc(e.target.value)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {iscOptions.map((val) => (
+                      <MenuItem key={val} value={val}>{val}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <FormControl size="small" sx={{ flex: 1 }}>
-              <InputLabel>No. of Poles</InputLabel>
-              <Select
-                value={selectedNoOfPoles}
-                label="No. of Poles"
-                onChange={(e) => setSelectedNoOfPoles(e.target.value)}
-              >
-                <MenuItem value="">All</MenuItem>
-                {noOfPolesOptions.map((val) => (
-                  <MenuItem key={val} value={String(val)}>{val}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+                <FormControl size="small" sx={{ flex: 1 }}>
+                  <InputLabel>No. of Poles</InputLabel>
+                  <Select
+                    value={selectedNoOfPoles}
+                    label="No. of Poles"
+                    onChange={(e) => setSelectedNoOfPoles(e.target.value)}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {noOfPolesOptions.map((val) => (
+                      <MenuItem key={val} value={String(val)}>{val}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
 
           {hasActiveFilters && (
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -296,16 +369,16 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
               {selectedCategory && (
                 <Chip label={selectedCategory} size="small" onDelete={() => setSelectedCategory('')} />
               )}
-              {selectedBrand && (
+              {!isPackageCategory && selectedBrand && (
                 <Chip label={selectedBrand} size="small" onDelete={() => setSelectedBrand('')} />
               )}
-              {selectedRatedCurrent && (
+              {!isPackageCategory && selectedRatedCurrent && (
                 <Chip label={`Current: ${selectedRatedCurrent}`} size="small" onDelete={() => setSelectedRatedCurrent('')} />
               )}
-              {selectedIsc && (
+              {!isPackageCategory && selectedIsc && (
                 <Chip label={`Isc: ${selectedIsc}`} size="small" onDelete={() => setSelectedIsc('')} />
               )}
-              {selectedNoOfPoles && (
+              {!isPackageCategory && selectedNoOfPoles && (
                 <Chip label={`Poles: ${selectedNoOfPoles}`} size="small" onDelete={() => setSelectedNoOfPoles('')} />
               )}
               <Chip
@@ -323,15 +396,117 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
 
         {/* Materials List */}
         <Box sx={{ flex: 1, overflow: 'auto' }}>
-          {filteredMaterials.length === 0 ? (
+          {isPackageCategory ? (
+            filteredPackages.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
+                <Typography variant="body2">No packages found</Typography>
+              </Box>
+            ) : (
+              <List dense disablePadding>
+                {filteredPackages.map((packageItem) => {
+                  const isSelected = packageSelections[packageItem.packageId] !== undefined;
+                  const quantity = packageSelections[packageItem.packageId] || 1;
+
+                  return (
+                    <ListItem
+                      key={packageItem.packageId}
+                      sx={{
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        backgroundColor: isSelected ? `${zoneColor}08` : 'transparent',
+                        '&:hover': { backgroundColor: isSelected ? `${zoneColor}12` : 'action.hover' },
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => togglePackage(packageItem.packageId)}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        sx={{
+                          color: zoneColor,
+                          '&.Mui-checked': { color: zoneColor },
+                          mr: 1,
+                        }}
+                      />
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body2" fontWeight={600}>
+                              {packageItem.packageName}
+                            </Typography>
+                            <Typography variant="body2" color="primary.main" fontWeight={600}>
+                              {packageItem.items.length} items
+                            </Typography>
+                          </Box>
+                        }
+                        secondary={
+                          <Box>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                whiteSpace: 'normal',
+                                overflowWrap: 'anywhere',
+                                display: 'block',
+                              }}
+                            >
+                              {packageItem.description || 'Reusable package bundle'}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+                              <Chip label={`ID ${packageItem.packageId}`} size="small" sx={{ height: 18, fontSize: 10 }} />
+                              <Chip label={`${packageItem.items.reduce((sum, item) => sum + item.quantity, 0)} qty`} size="small" variant="outlined" sx={{ height: 18, fontSize: 10 }} />
+                            </Box>
+                          </Box>
+                        }
+                      />
+
+                      {isSelected && (
+                        <Box
+                          sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 2 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => updatePackageQuantity(packageItem.packageId, quantity - 1)}
+                            disabled={quantity <= 1}
+                          >
+                            <RemoveIcon fontSize="small" />
+                          </IconButton>
+                          <TextField
+                            type="number"
+                            size="small"
+                            value={quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (val > 0) updatePackageQuantity(packageItem.packageId, val);
+                            }}
+                            inputProps={{
+                              min: 1,
+                              style: { width: 40, textAlign: 'center', padding: '4px' },
+                            }}
+                            sx={{ width: 60 }}
+                          />
+                          <IconButton
+                            size="small"
+                            onClick={() => updatePackageQuantity(packageItem.packageId, quantity + 1)}
+                          >
+                            <AddIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      )}
+                    </ListItem>
+                  );
+                })}
+              </List>
+            )
+          ) : filteredMaterials.length === 0 ? (
             <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
               <Typography variant="body2">No materials found</Typography>
             </Box>
           ) : (
             <List dense disablePadding>
               {filteredMaterials.slice(0, 100).map((material) => {
-                const isSelected = selections[material.materialId] !== undefined;
-                const quantity = selections[material.materialId] || 1;
+                const isSelected = materialSelections[material.materialId] !== undefined;
+                const quantity = materialSelections[material.materialId] || 1;
 
                 return (
                   <ListItem
@@ -373,10 +548,9 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
                             variant="caption"
                             color="text.secondary"
                             sx={{
-                              display: '-webkit-box',
-                              WebkitLineClamp: 1,
-                              WebkitBoxOrient: 'vertical',
-                              overflow: 'hidden',
+                              whiteSpace: 'normal',
+                              overflowWrap: 'anywhere',
+                              display: 'block',
                             }}
                           >
                             {material.description}
@@ -454,7 +628,11 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
             '&:hover': { backgroundColor: zoneColor, filter: 'brightness(0.9)' },
           }}
         >
-          {loading ? 'Adding...' : `Add ${selectedCount} Material${selectedCount !== 1 ? 's' : ''}`}
+          {loading
+            ? 'Adding...'
+            : isPackageCategory
+              ? `Add ${selectedCount} Package${selectedCount !== 1 ? 's' : ''}`
+              : `Add ${selectedCount} Material${selectedCount !== 1 ? 's' : ''}`}
         </MuiButton>
       </DialogActions>
     </Dialog>

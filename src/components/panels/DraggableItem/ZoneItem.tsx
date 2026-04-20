@@ -67,9 +67,8 @@ export const ZoneItem: React.FC<ZoneItemProps> = ({
             variant="body2"
             color="text.secondary"
             sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
             }}
           >
             {item.description}

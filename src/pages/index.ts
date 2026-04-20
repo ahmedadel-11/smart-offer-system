@@ -9,6 +9,12 @@ export { ProjectEditPage } from './Projects/ProjectEditPage';
 // Materials
 export { MaterialsPage } from './Materials/MaterialsPage';
 
+// Packages
+export { PackagesPage } from './Packages/PackagesPage';
+export { PackageCreatePage } from './Packages/PackageCreatePage';
+export { PackageEditPage } from './Packages/PackageEditPage';
+export { PackageDetailPage } from './Packages/PackageDetailPage';
+
 // Panel Designer
 export { PanelDesignerPage } from './PanelDesigner/PanelDesignerPage';
 

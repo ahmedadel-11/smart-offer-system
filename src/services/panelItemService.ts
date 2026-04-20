@@ -87,13 +87,15 @@ export const panelItemService = {
     panelId: number,
     materialId: number,
     quantity: number = 1,
-    itemType?: PanelItemType
+    itemType?: PanelItemType,
+    notes?: string
   ): Promise<PanelItem> {
     return this.create({
       panelId,
       materialId,
       quantity,
       itemType,
+      notes,
     });
   },
 

@@ -137,12 +137,14 @@ export function useAddMaterialToPanel() {
       materialId,
       quantity = 1,
       itemType,
+      notes,
     }: {
       panelId: number;
       materialId: number;
       quantity?: number;
       itemType?: PanelItemType;
-    }) => panelItemService.addMaterialToPanel(panelId, materialId, quantity, itemType),
+      notes?: string;
+    }) => panelItemService.addMaterialToPanel(panelId, materialId, quantity, itemType, notes),
     onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: [PANEL_ITEMS_QUERY_KEY, 'panel', item.panelId] });
       queryClient.invalidateQueries({ queryKey: [PANELS_QUERY_KEY, item.panelId] });

@@ -88,6 +88,13 @@ export const Permissions = {
   'Offers.View': 'Offers.View',
   'Offers.Generate': 'Offers.Generate',
   'Offers.Export': 'Offers.Export',
+  // Packages
+  'packages:view': 'packages:view',
+  'packages:create': 'packages:create',
+  'packages:edit': 'packages:edit',
+  'packages:delete': 'packages:delete',
+  'packages:deactivate': 'packages:deactivate',
+  'packages:use': 'packages:use',
   // System
   'AuditLogs.View': 'AuditLogs.View',
   'System.Configure': 'System.Configure',
@@ -140,6 +147,14 @@ export const PAGE_PERMISSIONS: Record<string, string[]> = {
     Permissions['Materials.Edit'],
     Permissions['Materials.Delete'],
     Permissions['Materials.Import'],
+  ],
+  '/packages': [
+    Permissions['packages:view'],
+    Permissions['packages:create'],
+    Permissions['packages:edit'],
+    Permissions['packages:delete'],
+    Permissions['packages:deactivate'],
+    Permissions['packages:use'],
   ],
   '/offers': [
     Permissions['Offers.View'],

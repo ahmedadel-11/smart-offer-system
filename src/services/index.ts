@@ -12,6 +12,7 @@ export { permissionService } from './permissionService';
 export { auditLogService } from './auditLogService';
 export { dashboardService } from './dashboardService';
 export { currencyRateService } from './currencyRateService';
+export { packageService } from './packageService';
 export {
   SystemRoles,
   Permissions,

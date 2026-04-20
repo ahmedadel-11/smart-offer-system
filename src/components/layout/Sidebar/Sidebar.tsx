@@ -16,6 +16,7 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import FolderIcon from '@mui/icons-material/Folder';
 import InventoryIcon from '@mui/icons-material/Inventory';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
 import DescriptionIcon from '@mui/icons-material/Description';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -54,6 +55,7 @@ interface NavItem {
 const navigationItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
   { id: 'projects', label: 'Projects', icon: <FolderIcon />, path: '/projects' },
+  { id: 'packages', label: 'Packages', icon: <Inventory2Icon />, path: '/packages' },
   { id: 'materials', label: 'Materials', icon: <InventoryIcon />, path: '/materials' },
   { id: 'offers', label: 'Offers', icon: <DescriptionIcon />, path: '/offers' },
   { id: 'import', label: 'Import', icon: <UploadFileIcon />, path: '/import' },

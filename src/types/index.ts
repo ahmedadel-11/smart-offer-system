@@ -143,6 +143,50 @@ export interface MaterialSearchFilters {
 }
 
 // =====================
+// Package Interfaces
+// =====================
+
+export interface PackageItemDto {
+  packageItemId: number;
+  packageId: number;
+  materialId: number;
+  quantity: number;
+  materialCode?: string | null;
+  materialDescription?: string | null;
+  materialBasePrice?: number | null;
+  material?: Material | null;
+}
+
+export interface PackageDto {
+  packageId: number;
+  packageName: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string | null;
+  createdByUserId: string | null;
+  updatedByUserId: string | null;
+  items: PackageItemDto[];
+}
+
+export interface CreatePackageItemRequest {
+  materialId: number;
+  quantity: number;
+}
+
+export interface CreatePackageRequest {
+  packageName: string;
+  description?: string;
+  items: CreatePackageItemRequest[];
+}
+
+export interface UpdatePackageRequest {
+  packageName: string;
+  description?: string;
+  items: CreatePackageItemRequest[];
+}
+
+// =====================
 // Project Interfaces
 // =====================
 
@@ -994,5 +1038,6 @@ export const PermissionCategoryColors: Record<string, string> = {
   Pricing: '#FF9800',
   Materials: '#4CAF50',
   Offers: '#00BCD4',
+  Package: '#795548',
   System: '#607D8B',
 };
