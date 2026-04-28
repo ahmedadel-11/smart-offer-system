@@ -9,7 +9,9 @@ import {
   TextField,
   Typography,
   Chip,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
@@ -54,6 +56,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
   onSubmit,
   onCancel,
 }) => {
+  const theme = useTheme();
   const { data: materials = [], isLoading: materialsLoading } = useMaterials();
   const { data: categories = [] } = useCategories();
   const { data: brands = [] } = useBrands();
@@ -182,7 +185,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
         sx={{
           p: { xs: 2, sm: 3 },
           borderRadius: 3,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(250,250,250,0.98) 100%)',
+          background: `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.grey[50], 0.98)} 100%)`,
         }}
       >
         <Stack spacing={2.5}>
@@ -365,7 +368,7 @@ export const PackageForm: React.FC<PackageFormProps> = ({
         open={materialsModalOpen}
         onClose={() => setMaterialsModalOpen(false)}
         title="Add Materials to Package"
-        zoneColor="#795548"
+        zoneColor={theme.palette.warning.dark}
         materials={materials}
         categories={categories}
         brands={brands}

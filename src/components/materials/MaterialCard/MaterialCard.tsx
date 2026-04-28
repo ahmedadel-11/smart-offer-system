@@ -75,7 +75,7 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
             >
               {material.brand}
             </Typography>
-            <Typography variant="h6" fontWeight={600} sx={{ fontFamily: 'Roboto Mono' }}>
+            <Typography variant="h6" fontWeight={600}>
               {material.itemCode}
             </Typography>
           </Box>
@@ -83,7 +83,6 @@ export const MaterialCard: React.FC<MaterialCardProps> = ({
             variant="h6"
             color="primary.main"
             fontWeight={700}
-            sx={{ fontFamily: 'Roboto Mono' }}
           >
             {formatPrice(material.basePrice, 'EGP')}
           </Typography>

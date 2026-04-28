@@ -6,6 +6,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { ZoneItem } from '../DraggableItem/ZoneItem';
 import { PanelItem, PanelItemType, PanelItemTypeColors, PanelItemTypeDescriptions } from '../../../types';
+import { STATUS_BADGE_COLORS } from '../../../constants';
 import InputIcon from '@mui/icons-material/Input';
 import OutputIcon from '@mui/icons-material/Output';
 import ViewInArIcon from '@mui/icons-material/ViewInAr';
@@ -318,7 +319,7 @@ export const getZoneConfig = (type: ZoneType) => {
   const configs: Record<ZoneType, { label: string; color: string; description: string }> = {
     unassigned: {
       label: 'Unassigned',
-      color: '#9E9E9E',
+      color: STATUS_BADGE_COLORS.neutral.main,
       description: 'Items not yet categorized',
     },
     incoming: {

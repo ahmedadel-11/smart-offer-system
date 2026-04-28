@@ -17,15 +17,16 @@ import SecurityIcon from '@mui/icons-material/Security';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PeopleIcon from '@mui/icons-material/People';
 import type { RoleDto, UserDto } from '../../types';
+import { STATUS_BADGE_COLORS } from '../../constants';
 import { SystemRoleBadge } from './SystemRoleBadge';
 import { ActionMenu } from '../common/ActionMenu/ActionMenu';
 import type { MenuAction } from '../common/ActionMenu/ActionMenu';
 
 // Role name color mapping per spec
 const ROLE_COLORS: Record<string, string> = {
-  SuperAdmin: '#9C27B0',
-  TenderingManager: '#2196F3',
-  TenderingEngineer: '#009688',
+  SuperAdmin: 'secondary.dark',
+  TenderingManager: 'primary.main',
+  TenderingEngineer: 'success.dark',
 };
 
 interface RoleTableProps {
@@ -99,7 +100,7 @@ export const RoleTable: React.FC<RoleTableProps> = ({
                     <Typography
                       variant="body2"
                       fontWeight={600}
-                      sx={{ color: ROLE_COLORS[role.name] || '#607D8B' }}
+                      sx={{ color: ROLE_COLORS[role.name] || STATUS_BADGE_COLORS.neutral.main }}
                     >
                       {role.name}
                     </Typography>

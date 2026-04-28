@@ -15,6 +15,7 @@ import {
   TableHead,
   TableRow,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import PrintIcon from '@mui/icons-material/Print';
@@ -439,18 +440,18 @@ export const OfferGeneratorPage: React.FC = () => {
                       <TableContainer>
                         <Table size="small">
                           <TableHead>
-                            <TableRow sx={{ 
-                              backgroundColor: '#0D47A1',
+                            <TableRow sx={(theme) => ({
+                              backgroundColor: theme.palette.primary.dark,
                               '& .MuiTableCell-head': {
-                                color: '#FFFFFF !important',
+                                color: `${theme.palette.primary.contrastText} !important`,
                                 fontWeight: '700 !important',
                                 fontSize: '0.95rem',
                                 padding: '14px 10px !important',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.5px',
-                                borderBottom: '3px solid #1565C0'
+                                borderBottom: `3px solid ${theme.palette.primary.main}`,
                               }
-                            }}>
+                            })}>
                               <TableCell sx={{ color: 'white !important' }}>Code</TableCell>
                               <TableCell sx={{ color: 'white !important' }}>Description</TableCell>
                               <TableCell sx={{ color: 'white !important' }}>Brand</TableCell>
@@ -462,10 +463,13 @@ export const OfferGeneratorPage: React.FC = () => {
                           </TableHead>
                           <TableBody>
                             {panel.items.map((item, itemIndex) => (
-                              <TableRow key={itemIndex} sx={{ 
-                                '&:hover': { backgroundColor: '#E3F2FD' },
-                                '&:nth-of-type(odd)': { backgroundColor: '#F5F5F5' }
-                              }}>
+                              <TableRow
+                                key={itemIndex}
+                                sx={(theme) => ({
+                                  '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.12) },
+                                  '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover },
+                                })}
+                              >
                                 <TableCell sx={{ fontSize: '0.875rem', fontWeight: 500 }}>{item.itemCode}</TableCell>
                                 <TableCell sx={{ fontSize: '0.875rem', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                   {item.description}
@@ -480,7 +484,7 @@ export const OfferGeneratorPage: React.FC = () => {
                                 <TableCell align="center" sx={{ fontSize: '0.875rem' }}>
                                   {item.poles || '-'}
                                 </TableCell>
-                                <TableCell align="center" sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#0D47A1' }}>
+                                <TableCell align="center" sx={{ fontSize: '0.875rem', fontWeight: 700, color: 'primary.dark' }}>
                                   {item.quantity}
                                 </TableCell>
                               </TableRow>
@@ -502,18 +506,18 @@ export const OfferGeneratorPage: React.FC = () => {
                   <TableContainer>
                     <Table size="small">
                       <TableHead>
-                        <TableRow sx={{ 
-                          backgroundColor: '#00695C',
+                        <TableRow sx={(theme) => ({
+                          backgroundColor: theme.palette.success.dark,
                           '& .MuiTableCell-head': {
-                            color: '#FFFFFF !important',
+                            color: `${theme.palette.success.contrastText} !important`,
                             fontWeight: '700 !important',
                             fontSize: '0.95rem',
                             padding: '14px 10px !important',
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
-                            borderBottom: '3px solid #00897B'
+                            borderBottom: `3px solid ${theme.palette.success.main}`,
                           }
-                        }}>
+                        })}>
                           <TableCell sx={{ color: 'white !important' }}>Panel</TableCell>
                           <TableCell align="center" sx={{ color: 'white !important' }}>Items</TableCell>
                           <TableCell align="right" sx={{ color: 'white !important' }}>Total Cost</TableCell>
@@ -523,10 +527,13 @@ export const OfferGeneratorPage: React.FC = () => {
                       </TableHead>
                       <TableBody>
                         {commercialOfferData.panels.map((panel, index) => (
-                          <TableRow key={index} sx={{ 
-                            '&:hover': { backgroundColor: '#E0F2F1' },
-                            '&:nth-of-type(odd)': { backgroundColor: '#F5F5F5' }
-                          }}>
+                          <TableRow
+                            key={index}
+                            sx={(theme) => ({
+                              '&:hover': { backgroundColor: alpha(theme.palette.success.main, 0.12) },
+                              '&:nth-of-type(odd)': { backgroundColor: theme.palette.action.hover },
+                            })}
+                          >
                             <TableCell sx={{ fontSize: '0.875rem', fontWeight: 500 }}>{panel.name}</TableCell>
                             <TableCell align="center" sx={{ fontSize: '0.875rem' }}>
                               {panel.items}
@@ -534,10 +541,10 @@ export const OfferGeneratorPage: React.FC = () => {
                             <TableCell align="right" sx={{ fontSize: '0.875rem' }}>
                               {formatCurrency(panel.totalCost)}
                             </TableCell>
-                            <TableCell align="right" sx={{ fontSize: '0.875rem', color: '#00897B', fontWeight: 700 }}>
+                            <TableCell align="right" sx={{ fontSize: '0.875rem', color: 'success.main', fontWeight: 700 }}>
                               {formatCurrency(panel.marginAmount)}
                             </TableCell>
-                            <TableCell align="right" sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#00695C' }}>
+                            <TableCell align="right" sx={{ fontSize: '0.875rem', fontWeight: 700, color: 'success.dark' }}>
                               {formatCurrency(panel.totalPrice)}
                             </TableCell>
                           </TableRow>
@@ -547,37 +554,45 @@ export const OfferGeneratorPage: React.FC = () => {
                   </TableContainer>
 
                   {/* Grand Totals */}
-                  <Box sx={{ mt: 3, p: 2, backgroundColor: '#E0F2F1', borderRadius: 1, border: '2px solid #00897B' }}>
+                  <Box
+                    sx={(theme) => ({
+                      mt: 3,
+                      p: 2,
+                      backgroundColor: alpha(theme.palette.success.main, 0.12),
+                      borderRadius: 1,
+                      border: `2px solid ${alpha(theme.palette.success.main, 0.45)}`,
+                    })}
+                  >
                     <Grid container spacing={2}>
                       <Grid item xs={6} sm={3}>
-                        <Typography variant="caption" sx={{ color: '#004D40', fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 600 }}>
                           Total Items
                         </Typography>
-                        <Typography variant="body1" fontWeight={700} sx={{ color: '#00695C', fontSize: '1.1rem' }}>
+                        <Typography variant="body1" fontWeight={700} sx={{ color: 'success.dark', fontSize: '1.1rem' }}>
                           {commercialOfferData.grandTotalItems}
                         </Typography>
                       </Grid>
                       <Grid item xs={6} sm={3}>
-                        <Typography variant="caption" sx={{ color: '#004D40', fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 600 }}>
                           Total Cost
                         </Typography>
-                        <Typography variant="body1" fontWeight={700} sx={{ color: '#00695C', fontSize: '1.1rem' }}>
+                        <Typography variant="body1" fontWeight={700} sx={{ color: 'success.dark', fontSize: '1.1rem' }}>
                           {formatCurrency(commercialOfferData.grandTotalCost)}
                         </Typography>
                       </Grid>
                       <Grid item xs={6} sm={3}>
-                        <Typography variant="caption" sx={{ color: '#004D40', fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 600 }}>
                           Total Margin
                         </Typography>
-                        <Typography variant="body1" fontWeight={700} sx={{ color: '#00897B', fontSize: '1.1rem' }}>
+                        <Typography variant="body1" fontWeight={700} sx={{ color: 'success.main', fontSize: '1.1rem' }}>
                           {formatCurrency(commercialOfferData.grandTotalMargin)}
                         </Typography>
                       </Grid>
                       <Grid item xs={6} sm={3}>
-                        <Typography variant="caption" sx={{ color: '#004D40', fontWeight: 600 }}>
+                        <Typography variant="caption" sx={{ color: 'success.dark', fontWeight: 600 }}>
                           Grand Total
                         </Typography>
-                        <Typography variant="h6" fontWeight={700} sx={{ color: '#00695C', fontSize: '1.2rem' }}>
+                        <Typography variant="h6" fontWeight={700} sx={{ color: 'success.dark', fontSize: '1.2rem' }}>
                           {formatCurrency(commercialOfferData.grandTotalPrice)}
                         </Typography>
                       </Grid>

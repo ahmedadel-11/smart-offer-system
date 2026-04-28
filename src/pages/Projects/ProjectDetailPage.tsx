@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Grid, Paper, Typography, Divider, Badge, Chip } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
 import AppsOutlinedIcon from '@mui/icons-material/AppsOutlined';
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
@@ -323,9 +324,19 @@ export const ProjectDetailPage: React.FC = () => {
       {/* Project Summary */}
       <Paper sx={{ p: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 3 } }}>
         {isProjectLocked && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, p: 1.5, borderRadius: 1, backgroundColor: '#FFF3E0' }}>
-            <LockIcon sx={{ color: '#E65100', fontSize: 20 }} />
-            <Typography variant="body2" color="#E65100" fontWeight={500}>
+          <Box
+            sx={(theme) => ({
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 2,
+              p: 1.5,
+              borderRadius: 1,
+              backgroundColor: alpha(theme.palette.warning.main, 0.14),
+            })}
+          >
+            <LockIcon sx={{ color: 'warning.dark', fontSize: 20 }} />
+            <Typography variant="body2" color="warning.dark" fontWeight={500}>
               This project is locked{project.lockedAt ? ` since ${formatDate(project.lockedAt)}` : ''}. Editing is disabled.
             </Typography>
           </Box>
@@ -376,45 +387,45 @@ export const ProjectDetailPage: React.FC = () => {
           </Grid>
           <Grid item xs={12} md={6}>
             <Paper
-              sx={{
+              sx={(theme) => ({
                 position: 'relative',
                 overflow: 'hidden',
                 p: { xs: 2.25, sm: 3 },
                 borderRadius: 2,
                 border: '1px solid',
-                borderColor: 'rgba(25, 118, 210, 0.14)',
-                background: 'linear-gradient(180deg, rgba(227, 242, 253, 0.96) 0%, rgba(255, 255, 255, 1) 100%)',
-                boxShadow: '0px 14px 40px rgba(25, 118, 210, 0.12)',
-              }}
+                borderColor: alpha(theme.palette.primary.main, 0.14),
+                background: `linear-gradient(180deg, ${alpha(theme.palette.primary.light, 0.16)} 0%, ${theme.palette.background.paper} 100%)`,
+                boxShadow: `0px 14px 40px ${alpha(theme.palette.primary.main, 0.12)}`,
+              })}
             >
               <Box
-                sx={{
+                sx={(theme) => ({
                   position: 'absolute',
                   top: -36,
                   right: -36,
                   width: 120,
                   height: 120,
                   borderRadius: '50%',
-                  background: 'radial-gradient(circle, rgba(25, 118, 210, 0.16) 0%, rgba(25, 118, 210, 0) 70%)',
+                  background: `radial-gradient(circle, ${alpha(theme.palette.primary.main, 0.16)} 0%, ${alpha(theme.palette.primary.main, 0)} 70%)`,
                   pointerEvents: 'none',
-                }}
+                })}
               />
 
               <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   <Box
-                    sx={{
+                    sx={(theme) => ({
                       width: 44,
                       height: 44,
                       borderRadius: 2,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      background: 'linear-gradient(135deg, #1976D2 0%, #64B5F6 100%)',
-                      color: '#fff',
-                      boxShadow: '0px 10px 24px rgba(25, 118, 210, 0.28)',
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+                      color: theme.palette.primary.contrastText,
+                      boxShadow: `0px 10px 24px ${alpha(theme.palette.primary.main, 0.28)}`,
                       flexShrink: 0,
-                    }}
+                    })}
                   >
                     <AccountBalanceWalletOutlinedIcon fontSize="small" />
                   </Box>
@@ -431,13 +442,13 @@ export const ProjectDetailPage: React.FC = () => {
                 <Chip
                   label={project.currency}
                   size="small"
-                  sx={{
+                  sx={(theme) => ({
                     fontWeight: 700,
-                    color: 'primary.dark',
-                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                    color: theme.palette.primary.dark,
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
                     border: '1px solid',
-                    borderColor: 'rgba(25, 118, 210, 0.12)',
-                  }}
+                    borderColor: alpha(theme.palette.primary.main, 0.12),
+                  })}
                 />
               </Box>
 
@@ -481,14 +492,14 @@ export const ProjectDetailPage: React.FC = () => {
                 ].map((item) => (
                   <Box
                     key={item.label}
-                    sx={{
+                    sx={(theme) => ({
                       p: 1.5,
                       borderRadius: 2,
                       border: '1px solid',
-                      borderColor: 'rgba(25, 118, 210, 0.10)',
+                      borderColor: alpha(theme.palette.primary.main, 0.1),
                       backgroundColor: item.background,
                       backdropFilter: 'blur(8px)',
-                    }}
+                    })}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.75 }}>
                       <Typography variant="body2" color="text.secondary" fontWeight={600}>
@@ -515,17 +526,17 @@ export const ProjectDetailPage: React.FC = () => {
               <Divider sx={{ my: 2 }} />
 
               <Box
-                sx={{
+                sx={(theme) => ({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 2,
                   p: 2,
                   borderRadius: 2,
-                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.10) 0%, rgba(76, 175, 80, 0.10) 100%)',
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.1)} 0%, ${alpha(theme.palette.success.main, 0.1)} 100%)`,
                   border: '1px solid',
-                  borderColor: 'rgba(25, 118, 210, 0.12)',
-                }}
+                  borderColor: alpha(theme.palette.primary.main, 0.12),
+                })}
               >
                 <Box>
                   <Typography variant="body2" color="text.secondary" fontWeight={600} sx={{ mb: 0.25 }}>

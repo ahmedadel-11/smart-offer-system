@@ -76,14 +76,14 @@ export const LoginPage: React.FC = () => {
 
   return (
     <Box
-      sx={{
+      sx={(theme) => ({
         minHeight: '100vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1976D2 0%, #42A5F5 50%, #90CAF9 100%)',
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 50%, ${theme.palette.info.light} 100%)`,
         p: 2,
-      }}
+      })}
     >
       <Paper
         elevation={8}

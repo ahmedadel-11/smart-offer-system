@@ -158,6 +158,9 @@ export function useBusbarCablesWorksheet(panelId: number, enabled = true) {
     queryKey: [BUSBAR_CABLES_QUERY_KEY, panelId],
     queryFn: () => panelItemService.getBusbarCablesWorksheet(panelId),
     enabled: panelId > 0 && enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

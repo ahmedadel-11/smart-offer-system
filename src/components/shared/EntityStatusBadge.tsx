@@ -1,6 +1,7 @@
 import React from 'react';
 import { Chip } from '@mui/material';
 import CircleIcon from '@mui/icons-material/Circle';
+import { STATUS_BADGE_COLORS } from '../../constants';
 import { EntityStatus, EntityStatusLabels, EntityStatusColors } from '../../types';
 
 interface EntityStatusBadgeProps {
@@ -12,7 +13,7 @@ export const EntityStatusBadge: React.FC<EntityStatusBadgeProps> = ({
   status,
   size = 'small',
 }) => {
-  const color = EntityStatusColors[status] || '#9E9E9E';
+  const color = EntityStatusColors[status] || STATUS_BADGE_COLORS.neutral.main;
   const label = EntityStatusLabels[status] || 'Unknown';
 
   return (

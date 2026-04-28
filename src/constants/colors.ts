@@ -81,6 +81,26 @@ export const ROLE_COLORS: Record<string, string> = {
   viewer: '#7B1FA2',
 } as const;
 
+// Dashboard stat colors
+export const DASHBOARD_STAT_COLORS = {
+  totalProjects: '#1976D2',
+  inProgress: '#FF9800',
+  completed: '#4CAF50',
+  totalPanels: '#9C27B0',
+  draftProjects: '#9E9E9E',
+  archived: '#607D8B',
+  activeOffersValue: '#00BCD4',
+  totalMaterials: '#E91E63',
+} as const;
+
+// Activity action colors
+export const ACTIVITY_ACTION_COLORS = {
+  create: '#4CAF50',
+  update: '#FF9800',
+  delete: '#F44336',
+  default: '#1976D2',
+} as const;
+
 /**
  * Get color for panel item type
  * @param type PanelItemType
@@ -106,4 +126,14 @@ export const getEntityStatusColor = (status: EntityStatus): string => {
  */
 export const getMaterialCategoryColor = (category: string): string => {
   return MATERIAL_CATEGORY_COLORS[category.toLowerCase()] || '#757575';
+};
+
+/**
+ * Get dashboard activity avatar color by action name
+ */
+export const getActivityActionColor = (action: string): string => {
+  if (action.includes('Create') || action.includes('Add')) return ACTIVITY_ACTION_COLORS.create;
+  if (action.includes('Update') || action.includes('Change')) return ACTIVITY_ACTION_COLORS.update;
+  if (action.includes('Delete') || action.includes('Remove')) return ACTIVITY_ACTION_COLORS.delete;
+  return ACTIVITY_ACTION_COLORS.default;
 };

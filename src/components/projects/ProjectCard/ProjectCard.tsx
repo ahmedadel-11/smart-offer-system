@@ -173,7 +173,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             <EntityStatusBadge status={project.status} />
             {project.isLocked && (
               <Tooltip title="Project is locked">
-                <LockIcon sx={{ fontSize: 16, color: '#E65100' }} />
+                <LockIcon sx={{ fontSize: 16, color: 'warning.dark' }} />
               </Tooltip>
             )}
           </Box>

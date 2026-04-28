@@ -1,5 +1,6 @@
 import React from 'react';
 import { Chip } from '@mui/material';
+import { STATUS_BADGE_COLORS } from '../../constants';
 import { RoleColors } from '../../types';
 
 interface RoleBadgeProps {
@@ -8,7 +9,7 @@ interface RoleBadgeProps {
 }
 
 export const RoleBadge: React.FC<RoleBadgeProps> = ({ role, size = 'small' }) => {
-  const color = RoleColors[role] || '#607D8B';
+  const color = RoleColors[role] || STATUS_BADGE_COLORS.neutral.main;
 
   return (
     <Chip

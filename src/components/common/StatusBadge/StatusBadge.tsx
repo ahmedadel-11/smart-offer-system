@@ -1,5 +1,6 @@
 import React from 'react';
 import { Chip, ChipProps } from '@mui/material';
+import { STATUS_BADGE_COLORS } from '../../../constants';
 
 interface StatusBadgeProps extends Omit<ChipProps, 'color'> {
   status: string;
@@ -7,11 +8,11 @@ interface StatusBadgeProps extends Omit<ChipProps, 'color'> {
 }
 
 const defaultColorMap: Record<string, string> = {
-  Draft: '#9E9E9E',
-  InProgress: '#2196F3',
-  Review: '#FF9800',
-  Completed: '#4CAF50',
-  Cancelled: '#F44336',
+  Draft: STATUS_BADGE_COLORS.neutral.main,
+  InProgress: STATUS_BADGE_COLORS.info.main,
+  Review: STATUS_BADGE_COLORS.warning.main,
+  Completed: STATUS_BADGE_COLORS.success.main,
+  Cancelled: STATUS_BADGE_COLORS.error.main,
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({
@@ -19,7 +20,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   colorMap = defaultColorMap,
   ...props
 }) => {
-  const color = colorMap[status] || '#9E9E9E';
+  const color = colorMap[status] || STATUS_BADGE_COLORS.neutral.main;
 
   return (
     <Chip

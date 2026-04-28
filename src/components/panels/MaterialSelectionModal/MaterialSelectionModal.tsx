@@ -531,7 +531,7 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
                     <ListItemText
                       primary={
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
+                          <Typography variant="body2" fontWeight={600}>
                             {material.itemCode}
                           </Typography>
                           <Typography variant="body2" color="primary.main" fontWeight={600}>

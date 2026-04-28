@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Grid,
@@ -52,6 +53,7 @@ import {
   useAddPanelCollaborator,
   useRemovePanelCollaborator,
   useUsers,
+  BUSBAR_CABLES_QUERY_KEY,
   useBusbarCablesWorksheet,
   usePackages,
   useProjectLockGuard,
@@ -63,7 +65,7 @@ import {
   PackageDto,
   ZoneType,
 } from '../../types';
-import { panelService } from '../../services';
+import { panelItemService, panelService } from '../../services';
 import toast from 'react-hot-toast';
 
 const BusbarCablesWorksheetModal = React.lazy(() =>
@@ -77,6 +79,15 @@ const BusbarCablesWorksheetCard = React.lazy(() =>
     default: module.BusbarCablesWorksheetCard,
   }))
 );
+
+let busbarModalPreloadPromise: Promise<unknown> | null = null;
+const preloadBusbarWorksheetModal = () => {
+  if (!busbarModalPreloadPromise) {
+    busbarModalPreloadPromise = import('../../components/panels/BusbarCablesWorksheetModal');
+  }
+
+  return busbarModalPreloadPromise;
+};
 
 const PACKAGE_NOTE_PREFIX = 'SMART_PACKAGE::';
 
@@ -118,6 +129,7 @@ const parsePackageNotes = (notes?: string | null): PackageItemMetadata | null =>
 export const PanelDesignerPage: React.FC = () => {
   const { id: projectId, panelId: panelIdStr } = useParams<{ id: string; panelId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const parsedProjectId = parseInt(projectId || '0');
   const parsedPanelId = parseInt(panelIdStr || '0');
 
@@ -144,6 +156,35 @@ export const PanelDesignerPage: React.FC = () => {
     () => materials?.find((material) => material.itemCode === 'SYS-BUSBAR-CABLES'),
     [materials]
   );
+
+  useEffect(() => {
+    if (selectedPanelId <= 0) {
+      return;
+    }
+
+    const prefetchBusbarResources = () => {
+      preloadBusbarWorksheetModal();
+      queryClient.prefetchQuery({
+        queryKey: [BUSBAR_CABLES_QUERY_KEY, selectedPanelId],
+        queryFn: () => panelItemService.getBusbarCablesWorksheet(selectedPanelId),
+        staleTime: 5 * 60 * 1000,
+      });
+    };
+
+    const idleCallback = (window as Window & { requestIdleCallback?: (callback: () => void) => number }).requestIdleCallback;
+
+    if (typeof idleCallback === 'function') {
+      const id = idleCallback(prefetchBusbarResources);
+      return () => {
+        if (typeof window.cancelIdleCallback === 'function') {
+          window.cancelIdleCallback(id);
+        }
+      };
+    }
+
+    const timeoutId = window.setTimeout(prefetchBusbarResources, 200);
+    return () => window.clearTimeout(timeoutId);
+  }, [queryClient, selectedPanelId]);
 
   // Mutations
   const addMaterialMutation = useAddMaterialToPanel();
@@ -858,19 +899,19 @@ export const PanelDesignerPage: React.FC = () => {
             </Grid>
             <Grid item xs={6} sm={3}>
               <Typography variant="caption" color="text.secondary">Total Cost</Typography>
-              <Typography variant="h6" fontWeight={600} sx={{ fontFamily: 'Roboto Mono' }}>
+              <Typography variant="h6" fontWeight={600}>
                 {formatCurrency(panelDetail.summary?.totalCost ?? 0)}
               </Typography>
             </Grid>
             <Grid item xs={6} sm={3}>
               <Typography variant="caption" color="text.secondary">Margin ({panelDetail.margin ?? 0}%)</Typography>
-              <Typography variant="h6" fontWeight={600} color="success.main" sx={{ fontFamily: 'Roboto Mono' }}>
+              <Typography variant="h6" fontWeight={600} color="success.main">
                 {formatCurrency(panelDetail.summary?.marginAmount ?? 0)}
               </Typography>
             </Grid>
             <Grid item xs={6} sm={3}>
               <Typography variant="caption" color="text.secondary">Total Price</Typography>
-              <Typography variant="h6" fontWeight={600} color="primary.main" sx={{ fontFamily: 'Roboto Mono' }}>
+              <Typography variant="h6" fontWeight={600} color="primary.main">
                 {formatCurrency(panelDetail.summary?.totalPrice ?? 0)}
               </Typography>
             </Grid>

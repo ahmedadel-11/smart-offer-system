@@ -9,6 +9,7 @@ import {
   Stack,
   TextField,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import Inventory2Icon from '@mui/icons-material/Inventory2';
@@ -172,13 +173,12 @@ export const PackagesPage: React.FC = () => {
 
       <Paper
         variant="outlined"
-        sx={{
+        sx={(theme) => ({
           p: { xs: 2, sm: 2.5 },
           mb: { xs: 2, sm: 3 },
           borderRadius: 3,
-          background:
-            'linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(156, 39, 176, 0.04) 100%)',
-        }}
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.04)} 100%)`,
+        })}
       >
         <Stack spacing={2}>
           <Stack

@@ -59,7 +59,6 @@ export const ZoneItem: React.FC<ZoneItemProps> = ({
           <Typography
             variant="body2"
             fontWeight={600}
-            sx={{ fontFamily: 'Roboto Mono' }}
           >
             {item.itemCode}
           </Typography>
@@ -135,12 +134,12 @@ export const ZoneItem: React.FC<ZoneItemProps> = ({
           variant="body2"
           fontWeight={600}
           color="primary.main"
-          sx={{ fontFamily: 'Roboto Mono', fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
+          sx={{ fontSize: { xs: '0.7rem', sm: '0.875rem' } }}
         >
           {formatPrice(item.totalPrice)}
         </Typography>
         {item.unitCost > 0 && item.unitCost !== item.totalPrice && (
-          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'Roboto Mono', display: 'block' }}>
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
             {formatPrice(item.unitCost)}/ea
           </Typography>
         )}

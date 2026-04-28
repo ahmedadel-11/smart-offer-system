@@ -13,6 +13,7 @@ import LockIcon from '@mui/icons-material/Lock';
 import { Modal } from '../common/Modal/Modal';
 import { Button } from '../common/Button/Button';
 import type { UserDto, RoleDto } from '../../types';
+import { STATUS_BADGE_COLORS } from '../../constants';
 
 interface AssignRolesModalProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ export const AssignRolesModal: React.FC<AssignRolesModalProps> = ({
                   </Typography>
                   {role.isSystemRole && (
                     <Tooltip title="System role">
-                      <LockIcon sx={{ fontSize: 14, color: '#FF9800' }} />
+                      <LockIcon sx={{ fontSize: 14, color: STATUS_BADGE_COLORS.warning.main }} />
                     </Tooltip>
                   )}
                 </Box>

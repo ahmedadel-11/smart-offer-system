@@ -1,6 +1,7 @@
 import React from 'react';
 import { Chip } from '@mui/material';
 import { PermissionCategoryColors } from '../../types';
+import { STATUS_BADGE_COLORS } from '../../constants';
 
 interface CategoryBadgeProps {
   category: string;
@@ -8,7 +9,7 @@ interface CategoryBadgeProps {
 }
 
 export const CategoryBadge: React.FC<CategoryBadgeProps> = ({ category, size = 'small' }) => {
-  const color = PermissionCategoryColors[category] || '#607D8B';
+  const color = PermissionCategoryColors[category] || STATUS_BADGE_COLORS.neutral.main;
 
   return (
     <Chip

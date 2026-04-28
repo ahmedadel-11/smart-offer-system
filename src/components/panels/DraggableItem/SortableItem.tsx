@@ -89,7 +89,6 @@ export const SortableItem: React.FC<SortableItemProps> = ({
           <Typography
             variant="body2"
             fontWeight={600}
-            sx={{ fontFamily: 'Roboto Mono' }}
           >
             {item.itemCode}
           </Typography>
@@ -151,7 +150,6 @@ export const SortableItem: React.FC<SortableItemProps> = ({
         sx={{
           minWidth: { xs: 60, sm: 80 },
           textAlign: 'right',
-          fontFamily: 'Roboto Mono',
           fontSize: { xs: '0.7rem', sm: '0.875rem' },
         }}
       >

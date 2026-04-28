@@ -1,5 +1,6 @@
 import React from 'react';
 import { Box, Button, Chip, Paper, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CableIcon from '@mui/icons-material/Cable';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -111,8 +112,9 @@ export const BusbarCablesWorksheetCard: React.FC<BusbarCablesWorksheetCardProps>
         borderRadius: 2,
         border: '1px solid',
         borderColor: 'secondary.light',
-        background: 'linear-gradient(135deg, rgba(156,39,176,0.08) 0%, rgba(25,118,210,0.06) 100%)',
-        boxShadow: '0px 2px 10px rgba(25, 118, 210, 0.08)',
+        background: (theme) =>
+          `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.1)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
+        boxShadow: (theme) => `0px 2px 10px ${alpha(theme.palette.primary.main, 0.12)}`,
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
@@ -126,7 +128,7 @@ export const BusbarCablesWorksheetCard: React.FC<BusbarCablesWorksheetCardProps>
               alignItems: 'center',
               justifyContent: 'center',
               backgroundColor: 'secondary.main',
-              color: 'white',
+              color: 'common.white',
               flexShrink: 0,
             }}
           >
@@ -155,7 +157,7 @@ export const BusbarCablesWorksheetCard: React.FC<BusbarCablesWorksheetCardProps>
             label={`${section.label}: ${formatKg(section.value)} kg`}
             size="small"
             variant="outlined"
-            sx={{ backgroundColor: 'white' }}
+            sx={{ backgroundColor: 'common.white' }}
           />
         ))}
         {pricing && (
@@ -164,13 +166,13 @@ export const BusbarCablesWorksheetCard: React.FC<BusbarCablesWorksheetCardProps>
               label={`Price Source: ${pricing.priceSource}`}
               size="small"
               variant="outlined"
-              sx={{ backgroundColor: 'white' }}
+              sx={{ backgroundColor: 'common.white' }}
             />
             <Chip
               label={`Applied Price/KG: ${formatMoney(pricing.appliedPricePerKg, currency)}`}
               size="small"
               variant="outlined"
-              sx={{ backgroundColor: 'white' }}
+              sx={{ backgroundColor: 'common.white' }}
             />
             <Chip
               label={`Total Cost: ${formatMoney(pricing.totalCost, currency)}`}

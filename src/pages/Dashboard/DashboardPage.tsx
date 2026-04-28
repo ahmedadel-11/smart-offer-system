@@ -17,6 +17,7 @@ import CategoryIcon from '@mui/icons-material/Category';
 import { PageHeader, Button, EntityStatusBadge } from '../../components';
 import { useProjects, useDashboardStats, useRecentActivity } from '../../hooks';
 import { useAuth } from '../../contexts';
+import { DASHBOARD_STAT_COLORS, getActivityActionColor } from '../../constants';
 import { RecentActivityItem } from '../../types';
 import { parseUtcTimestamp } from '../../utils';
 
@@ -113,7 +114,7 @@ export const DashboardPage: React.FC = () => {
             title="Total Projects"
             value={dashboardStats?.totalProjects ?? 0}
             icon={<FolderIcon />}
-            color="#1976D2"
+            color={DASHBOARD_STAT_COLORS.totalProjects}
             loading={isLoading}
           />
         </Grid>
@@ -122,7 +123,7 @@ export const DashboardPage: React.FC = () => {
             title="In Progress"
             value={dashboardStats?.inProgressProjects ?? 0}
             icon={<PendingActionsIcon />}
-            color="#FF9800"
+            color={DASHBOARD_STAT_COLORS.inProgress}
             loading={isLoading}
           />
         </Grid>
@@ -131,7 +132,7 @@ export const DashboardPage: React.FC = () => {
             title="Completed"
             value={dashboardStats?.completedProjects ?? 0}
             icon={<CheckCircleIcon />}
-            color="#4CAF50"
+            color={DASHBOARD_STAT_COLORS.completed}
             loading={isLoading}
           />
         </Grid>
@@ -140,7 +141,7 @@ export const DashboardPage: React.FC = () => {
             title="Total Panels"
             value={dashboardStats?.totalPanels ?? 0}
             icon={<DashboardIcon />}
-            color="#9C27B0"
+            color={DASHBOARD_STAT_COLORS.totalPanels}
             loading={isLoading}
           />
         </Grid>
@@ -149,7 +150,7 @@ export const DashboardPage: React.FC = () => {
             title="Draft Projects"
             value={dashboardStats?.draftProjects ?? 0}
             icon={<DraftsIcon />}
-            color="#9E9E9E"
+            color={DASHBOARD_STAT_COLORS.draftProjects}
             loading={isLoading}
           />
         </Grid>
@@ -158,7 +159,7 @@ export const DashboardPage: React.FC = () => {
             title="Archived"
             value={dashboardStats?.archivedProjects ?? 0}
             icon={<ArchiveIcon />}
-            color="#607D8B"
+            color={DASHBOARD_STAT_COLORS.archived}
             loading={isLoading}
           />
         </Grid>
@@ -167,7 +168,7 @@ export const DashboardPage: React.FC = () => {
             title="Active Offers Value"
             value={dashboardStats ? `${dashboardStats.totalActiveOffersValue.toLocaleString()}` : '0'}
             icon={<AttachMoneyIcon />}
-            color="#00BCD4"
+            color={DASHBOARD_STAT_COLORS.activeOffersValue}
             loading={isLoading}
           />
         </Grid>
@@ -176,7 +177,7 @@ export const DashboardPage: React.FC = () => {
             title="Total Materials"
             value={dashboardStats?.totalMaterials ?? 0}
             icon={<CategoryIcon />}
-            color="#E91E63"
+            color={DASHBOARD_STAT_COLORS.totalMaterials}
             loading={isLoading}
           />
         </Grid>
@@ -323,7 +324,7 @@ export const DashboardPage: React.FC = () => {
                         width: 32,
                         height: 32,
                         fontSize: 14,
-                        bgcolor: getActionColor(log.action),
+                        bgcolor: getActivityActionColor(log.action),
                       }}
                     >
                       {(log.userName || '?')[0].toUpperCase()}
@@ -358,13 +359,6 @@ export const DashboardPage: React.FC = () => {
     </Box>
   );
 };
-
-function getActionColor(action: string): string {
-  if (action.includes('Create') || action.includes('Add')) return '#4CAF50';
-  if (action.includes('Update') || action.includes('Change')) return '#FF9800';
-  if (action.includes('Delete') || action.includes('Remove')) return '#F44336';
-  return '#1976D2';
-}
 
 function formatRelativeTime(dateStr: string): string {
   const now = new Date();

@@ -14,6 +14,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
 import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -162,13 +163,12 @@ export const PackageDetailPage: React.FC = () => {
 
       <Paper
         variant="outlined"
-        sx={{
+        sx={(theme) => ({
           p: { xs: 2, sm: 3 },
           mb: { xs: 2, sm: 3 },
           borderRadius: 3,
-          background:
-            'linear-gradient(135deg, rgba(25, 118, 210, 0.08) 0%, rgba(156, 39, 176, 0.04) 100%)',
-        }}
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.04)} 100%)`,
+        })}
       >
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between">
           <Stack spacing={1} sx={{ minWidth: 0 }}>

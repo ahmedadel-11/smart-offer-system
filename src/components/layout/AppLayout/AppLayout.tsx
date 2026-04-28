@@ -37,7 +37,7 @@ export const AppLayout: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          backgroundColor: '#f5f5f5',
+          backgroundColor: 'background.default',
           minHeight: '100vh',
           pt: '64px',
           width: '100%',

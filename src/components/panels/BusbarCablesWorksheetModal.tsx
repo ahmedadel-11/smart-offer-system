@@ -26,7 +26,9 @@ import {
   Collapse,
   Radio,
   RadioGroup,
+  useTheme,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import CalculateIcon from '@mui/icons-material/Calculate';
@@ -41,11 +43,15 @@ import {
 } from '../../types';
 
 const COEFFICIENT = 1.221;
-const SECTION_ACCENTS = {
-  main: '#1976D2',
-  neutral: '#00ACC1',
-  connection: '#6A1B9A',
-};
+const KG_FORMATTER = new Intl.NumberFormat('en-EG', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const METERS_FORMATTER = new Intl.NumberFormat('en-EG', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const MONEY_FORMATTERS = new Map<string, Intl.NumberFormat>();
 
 const MAIN_BUSBAR_ROWS = [
   '(20*5)',
@@ -266,24 +272,29 @@ const toCompactWorksheetInput = (state: WorksheetState): BusbarCablesWorksheetIn
 };
 
 const formatKg = (value: number) =>
-  new Intl.NumberFormat('en-EG', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  KG_FORMATTER.format(value);
 
-const formatMoney = (value: number, currency: string) =>
-  new Intl.NumberFormat('en-EG', {
+const getMoneyFormatter = (currency: string) => {
+  const existing = MONEY_FORMATTERS.get(currency);
+  if (existing) {
+    return existing;
+  }
+
+  const formatter = new Intl.NumberFormat('en-EG', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  });
+  MONEY_FORMATTERS.set(currency, formatter);
+  return formatter;
+};
+
+const formatMoney = (value: number, currency: string) =>
+  getMoneyFormatter(currency).format(value);
 
 const formatMeters = (value: number) =>
-  new Intl.NumberFormat('en-EG', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  METERS_FORMATTER.format(value);
 
 const SectionHeader: React.FC<{
   label: string;
@@ -306,8 +317,8 @@ const SectionHeader: React.FC<{
       px: 2,
       py: 1.25,
       borderRadius: '12px 12px 0 0',
-      background: `linear-gradient(135deg, ${color} 0%, ${color}CC 100%)`,
-      color: 'white',
+      background: `linear-gradient(135deg, ${color} 0%, ${alpha(color, 0.82)} 100%)`,
+      color: 'common.white',
       cursor: 'pointer',
       userSelect: 'none',
     }}
@@ -325,14 +336,18 @@ const SectionHeader: React.FC<{
       {label}
     </Typography>
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-      <Chip label={`${formatKg(totalKg)} kg`} size="small" sx={{ backgroundColor: 'rgba(255,255,255,0.18)', color: 'white', fontWeight: 700 }} />
+      <Chip
+        label={`${formatKg(totalKg)} kg`}
+        size="small"
+        sx={{ backgroundColor: (theme) => alpha(theme.palette.common.white, 0.18), color: 'common.white', fontWeight: 700 }}
+      />
       <IconButton
         onClick={(event) => {
           event.stopPropagation();
           onToggle();
         }}
         size="small"
-        sx={{ color: 'white' }}
+        sx={{ color: 'common.white' }}
       >
         {open ? <ExpandLessIcon /> : <ExpandMoreIcon />}
       </IconButton>
@@ -345,10 +360,10 @@ const EditableCell: React.FC<{
   onChange: (value: number) => void;
   width?: number;
   textAlign?: 'left' | 'center' | 'right';
-  accent?: string;
+  accent: string;
   step?: number;
   integer?: boolean;
-}> = ({ value, onChange, width = 92, textAlign = 'center', accent = '#1976D2', step = 0.1, integer = false }) => (
+}> = ({ value, onChange, width = 92, textAlign = 'center', accent, step = 0.1, integer = false }) => (
   <TextField
     type="number"
     variant="standard"
@@ -398,13 +413,23 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
   currency = 'EGP',
   onClose,
 }) => {
+  const theme = useTheme();
+  const sectionAccents = useMemo(
+    () => ({
+      main: theme.palette.primary.main,
+      neutral: theme.palette.info.main,
+      connection: theme.palette.secondary.dark,
+    }),
+    [theme]
+  );
+
   const [state, setState] = useState<WorksheetState>(buildDefaultWorksheet());
   const [priceMode, setPriceMode] = useState<'default' | 'manual'>('default');
   const [manualPricePerKg, setManualPricePerKg] = useState(0);
   const [sectionOpen, setSectionOpen] = useState({
     mainBusbar: true,
-    neutralEarthBar: true,
-    connection: true,
+    neutralEarthBar: false,
+    connection: false,
   });
   const calculateMutation = useCalculateBusbarCablesWorksheet();
   const saveMutation = useSaveBusbarCablesWorksheet();
@@ -414,8 +439,8 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
       setState(fromSavedWorksheet(worksheet));
       setSectionOpen({
         mainBusbar: true,
-        neutralEarthBar: true,
-        connection: true,
+        neutralEarthBar: false,
+        connection: false,
       });
       setPriceMode(worksheet?.pricing?.priceSource === 'Manual' ? 'manual' : 'default');
       setManualPricePerKg(worksheet?.pricing?.priceSource === 'Manual' ? worksheet?.pricing?.appliedPricePerKg ?? 0 : 0);
@@ -455,8 +480,8 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
     setState(fromSavedWorksheet(worksheet));
     setSectionOpen({
       mainBusbar: true,
-      neutralEarthBar: true,
-      connection: true,
+      neutralEarthBar: false,
+      connection: false,
     });
     setPriceMode(worksheet?.pricing?.priceSource === 'Manual' ? 'manual' : 'default');
     setManualPricePerKg(worksheet?.pricing?.priceSource === 'Manual' ? worksheet?.pricing?.appliedPricePerKg ?? 0 : 0);
@@ -506,7 +531,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
     <Paper sx={{ overflow: 'hidden', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
       <SectionHeader
         label="Main Busbar"
-        color={SECTION_ACCENTS.main}
+        color={sectionAccents.main}
         totalKg={result.mainBusbarTotalKg}
         open={sectionOpen.mainBusbar}
         onToggle={() => toggleSection('mainBusbar')}
@@ -515,7 +540,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
         <TableContainer>
           <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#FAFBFE' }}>
+            <TableRow sx={{ backgroundColor: (muiTheme) => alpha(muiTheme.palette.primary.main, 0.03) }}>
               <TableCell sx={{ fontWeight: 700 }}>Size</TableCell>
               <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}># Bars</TableCell>
               <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}># Poles</TableCell>
@@ -527,22 +552,22 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
           </TableHead>
           <TableBody>
             {result.mainBusbar.map((row, index) => (
-              <TableRow key={row.size} sx={{ '&:nth-of-type(even)': { backgroundColor: '#FCFDFF' } }}>
+              <TableRow key={row.size} sx={{ '&:nth-of-type(even)': { backgroundColor: (muiTheme) => alpha(muiTheme.palette.primary.main, 0.015) } }}>
                 <TableCell sx={{ fontFamily: 'Roboto Mono', fontWeight: 600 }}>{row.size}</TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.mainBusbar[index].bars} onChange={(value) => updateMainRow(index, 'bars', value)} accent={SECTION_ACCENTS.main} integer step={1} />
+                  <EditableCell value={state.mainBusbar[index].bars} onChange={(value) => updateMainRow(index, 'bars', value)} accent={sectionAccents.main} integer step={1} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.mainBusbar[index].poles} onChange={(value) => updateMainRow(index, 'poles', value)} accent={SECTION_ACCENTS.main} integer step={1} />
+                  <EditableCell value={state.mainBusbar[index].poles} onChange={(value) => updateMainRow(index, 'poles', value)} accent={sectionAccents.main} integer step={1} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.mainBusbar[index].vrMeters} onChange={(value) => updateMainRow(index, 'vrMeters', value)} accent={SECTION_ACCENTS.main} />
+                  <EditableCell value={state.mainBusbar[index].vrMeters} onChange={(value) => updateMainRow(index, 'vrMeters', value)} accent={sectionAccents.main} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.mainBusbar[index].horizontalMeters} onChange={(value) => updateMainRow(index, 'horizontalMeters', value)} accent={SECTION_ACCENTS.main} />
+                  <EditableCell value={state.mainBusbar[index].horizontalMeters} onChange={(value) => updateMainRow(index, 'horizontalMeters', value)} accent={sectionAccents.main} />
                 </TableCell>
                 <TableCell align="center">
-                  <Box sx={{ px: 1.5, py: 0.75, borderRadius: 1, backgroundColor: 'rgba(25,118,210,0.08)' }}>
+                  <Box sx={{ px: 1.5, py: 0.75, borderRadius: 1, backgroundColor: alpha(sectionAccents.main, 0.08) }}>
                     <ReadOnlyCell value={row.totalMeters} strong />
                   </Box>
                 </TableCell>
@@ -564,7 +589,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
     <Paper sx={{ overflow: 'hidden', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
       <SectionHeader
         label="Neutral + Earth Bar"
-        color={SECTION_ACCENTS.neutral}
+        color={sectionAccents.neutral}
         totalKg={result.neutralEarthTotalKg}
         open={sectionOpen.neutralEarthBar}
         onToggle={() => toggleSection('neutralEarthBar')}
@@ -573,7 +598,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
         <TableContainer>
           <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#FAFBFE' }}>
+            <TableRow sx={{ backgroundColor: (muiTheme) => alpha(muiTheme.palette.primary.main, 0.03) }}>
               <TableCell sx={{ fontWeight: 700 }}>Size</TableCell>
               <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}># Bars</TableCell>
               <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}>N (mt)</TableCell>
@@ -584,19 +609,19 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
           </TableHead>
           <TableBody>
             {result.neutralEarthBar.map((row, index) => (
-              <TableRow key={row.size} sx={{ '&:nth-of-type(even)': { backgroundColor: '#FCFDFF' } }}>
+              <TableRow key={row.size} sx={{ '&:nth-of-type(even)': { backgroundColor: (muiTheme) => alpha(muiTheme.palette.primary.main, 0.015) } }}>
                 <TableCell sx={{ fontFamily: 'Roboto Mono', fontWeight: 600 }}>{row.size}</TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.neutralEarthBar[index].bars} onChange={(value) => updateNeutralRow(index, 'bars', value)} accent={SECTION_ACCENTS.neutral} integer step={1} />
+                  <EditableCell value={state.neutralEarthBar[index].bars} onChange={(value) => updateNeutralRow(index, 'bars', value)} accent={sectionAccents.neutral} integer step={1} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.neutralEarthBar[index].neutralMeters} onChange={(value) => updateNeutralRow(index, 'neutralMeters', value)} accent={SECTION_ACCENTS.neutral} />
+                  <EditableCell value={state.neutralEarthBar[index].neutralMeters} onChange={(value) => updateNeutralRow(index, 'neutralMeters', value)} accent={sectionAccents.neutral} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.neutralEarthBar[index].earthMeters} onChange={(value) => updateNeutralRow(index, 'earthMeters', value)} accent={SECTION_ACCENTS.neutral} />
+                  <EditableCell value={state.neutralEarthBar[index].earthMeters} onChange={(value) => updateNeutralRow(index, 'earthMeters', value)} accent={sectionAccents.neutral} />
                 </TableCell>
                 <TableCell align="center">
-                  <Box sx={{ px: 1.5, py: 0.75, borderRadius: 1, backgroundColor: 'rgba(0,172,193,0.08)' }}>
+                  <Box sx={{ px: 1.5, py: 0.75, borderRadius: 1, backgroundColor: alpha(sectionAccents.neutral, 0.08) }}>
                     <ReadOnlyCell value={row.totalMeters} strong />
                   </Box>
                 </TableCell>
@@ -618,7 +643,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
     <Paper sx={{ overflow: 'hidden', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
       <SectionHeader
         label="Connection"
-        color={SECTION_ACCENTS.connection}
+        color={sectionAccents.connection}
         totalKg={result.connectionTotalKg}
         open={sectionOpen.connection}
         onToggle={() => toggleSection('connection')}
@@ -627,7 +652,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
         <TableContainer>
           <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: '#FAFBFE' }}>
+            <TableRow sx={{ backgroundColor: (muiTheme) => alpha(muiTheme.palette.primary.main, 0.03) }}>
               <TableCell sx={{ fontWeight: 700 }}>Size</TableCell>
               <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}># Bars</TableCell>
               <TableCell sx={{ fontWeight: 700, textAlign: 'center' }}># Poles</TableCell>
@@ -639,22 +664,22 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
           </TableHead>
           <TableBody>
             {result.connection.map((row, index) => (
-              <TableRow key={row.size} sx={{ '&:nth-of-type(even)': { backgroundColor: '#FCFDFF' } }}>
+              <TableRow key={row.size} sx={{ '&:nth-of-type(even)': { backgroundColor: (muiTheme) => alpha(muiTheme.palette.primary.main, 0.015) } }}>
                 <TableCell sx={{ fontFamily: 'Roboto Mono', fontWeight: 600 }}>{row.size}</TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.connection[index].bars} onChange={(value) => updateConnectionRow(index, 'bars', value)} accent={SECTION_ACCENTS.connection} integer step={1} />
+                  <EditableCell value={state.connection[index].bars} onChange={(value) => updateConnectionRow(index, 'bars', value)} accent={sectionAccents.connection} integer step={1} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.connection[index].poles} onChange={(value) => updateConnectionRow(index, 'poles', value)} accent={SECTION_ACCENTS.connection} integer step={1} />
+                  <EditableCell value={state.connection[index].poles} onChange={(value) => updateConnectionRow(index, 'poles', value)} accent={sectionAccents.connection} integer step={1} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.connection[index].customMeters} onChange={(value) => updateConnectionRow(index, 'customMeters', value)} accent={SECTION_ACCENTS.connection} />
+                  <EditableCell value={state.connection[index].customMeters} onChange={(value) => updateConnectionRow(index, 'customMeters', value)} accent={sectionAccents.connection} />
                 </TableCell>
                 <TableCell align="center">
-                  <EditableCell value={state.connection[index].bbMeters} onChange={(value) => updateConnectionRow(index, 'bbMeters', value)} accent={SECTION_ACCENTS.connection} />
+                  <EditableCell value={state.connection[index].bbMeters} onChange={(value) => updateConnectionRow(index, 'bbMeters', value)} accent={sectionAccents.connection} />
                 </TableCell>
                 <TableCell align="center">
-                  <Box sx={{ px: 1.5, py: 0.75, borderRadius: 1, backgroundColor: 'rgba(106,27,154,0.08)' }}>
+                  <Box sx={{ px: 1.5, py: 0.75, borderRadius: 1, backgroundColor: alpha(sectionAccents.connection, 0.08) }}>
                     <ReadOnlyCell value={row.totalMeters} strong />
                   </Box>
                 </TableCell>
@@ -676,6 +701,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
     <Dialog
       open={open}
       onClose={isSaving ? undefined : onClose}
+      keepMounted
       fullWidth
       maxWidth="xl"
       PaperProps={{
@@ -684,7 +710,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
           overflow: 'hidden',
           borderRadius: 3,
           background:
-            'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,247,255,0.96) 100%)',
+            `linear-gradient(180deg, ${alpha(theme.palette.background.paper, 0.98)} 0%, ${alpha(theme.palette.primary.light, 0.06)} 100%)`,
         },
       }}
     >
@@ -694,8 +720,8 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
           overflow: 'hidden',
           borderBottom: '1px solid',
           borderColor: 'divider',
-          background: 'linear-gradient(135deg, #0F172A 0%, #1D4ED8 55%, #7C3AED 100%)',
-          color: 'white',
+          background: `linear-gradient(135deg, ${theme.palette.grey[900]} 0%, ${theme.palette.primary.dark} 55%, ${theme.palette.secondary.main} 100%)`,
+          color: 'common.white',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, p: 2.5 }}>
@@ -707,7 +733,7 @@ export const BusbarCablesWorksheetModal: React.FC<BusbarCablesWorksheetModalProp
               Fill the worksheet, recalculate totals, then store it as one Panel Item.
             </Typography>
           </Box>
-          <IconButton onClick={onClose} disabled={isSaving} sx={{ color: 'white', mt: -0.5 }}>
+          <IconButton onClick={onClose} disabled={isSaving} sx={{ color: 'common.white', mt: -0.5 }}>
             <CloseIcon />
           </IconButton>
         </Box>

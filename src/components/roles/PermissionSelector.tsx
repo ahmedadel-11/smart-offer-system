@@ -14,6 +14,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { PermissionDto } from '../../types';
 import { PermissionCategoryColors } from '../../types';
+import { STATUS_BADGE_COLORS } from '../../constants';
 
 interface PermissionSelectorProps {
   permissions: PermissionDto[];
@@ -74,7 +75,7 @@ export const PermissionSelector: React.FC<PermissionSelectorProps> = ({
         const catPerms = grouped[category];
         const selectedCount = catPerms.filter((p) => selected.has(p.id)).length;
         const allSelected = selectedCount === catPerms.length;
-        const color = PermissionCategoryColors[category] || '#607D8B';
+        const color = PermissionCategoryColors[category] || STATUS_BADGE_COLORS.neutral.main;
 
         return (
           <Accordion key={category} variant="outlined" sx={{ mb: 1, '&:before': { display: 'none' } }}>

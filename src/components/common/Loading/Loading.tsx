@@ -40,7 +40,7 @@ export const Loading: React.FC<LoadingProps> = ({
 
   if (overlay) {
     return (
-      <Backdrop open sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, color: '#fff' }}>
+      <Backdrop open sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, color: 'common.white' }}>
         {content}
       </Backdrop>
     );

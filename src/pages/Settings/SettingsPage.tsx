@@ -11,6 +11,7 @@ import {
   Alert,
   Chip,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
@@ -125,14 +126,13 @@ export const SettingsPage: React.FC = () => {
         {/* Company Information */}
         <Grid item xs={12}>
           <Paper
-            sx={{
+            sx={(theme) => ({
               p: { xs: 2, sm: 3 },
               borderRadius: 2,
               border: '1px solid',
               borderColor: 'divider',
-              background:
-                'linear-gradient(135deg, rgba(25,118,210,0.08) 0%, rgba(25,118,210,0.02) 100%)',
-            }}
+              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+            })}
           >
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Box>
