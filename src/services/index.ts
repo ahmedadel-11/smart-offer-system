@@ -13,6 +13,7 @@ export { auditLogService } from './auditLogService';
 export { dashboardService } from './dashboardService';
 export { currencyRateService } from './currencyRateService';
 export { packageService } from './packageService';
+export { enclosureService } from './enclosureService';
 export {
   SystemRoles,
   Permissions,

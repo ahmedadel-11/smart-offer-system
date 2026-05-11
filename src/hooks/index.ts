@@ -11,3 +11,4 @@ export * from './useCurrencyRates';
 export * from './useOfferData';
 export * from './useProjectLockGuard';
 export * from './usePackages';
+export * from './useEnclosure';

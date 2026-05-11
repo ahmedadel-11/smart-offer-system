@@ -365,6 +365,75 @@ export interface UpdatePanelItem {
 }
 
 // =====================
+// Enclosure Interfaces
+// =====================
+
+export interface EnclosureComponent {
+  enclosureComponentId: number;
+  reference?: string | null;
+  description: string;
+  brand?: string | null;
+  quantity: number;
+  unitPriceList: number;
+  totalPriceList: number;
+  qty: number;
+  notesName?: string | null;
+}
+
+export interface CreateEnclosureComponent {
+  reference?: string | null;
+  description: string;
+  brand?: string | null;
+  quantity: number;
+  unitPriceList: number;
+  totalPriceList: number;
+  qty: number;
+  notesName?: string | null;
+}
+
+export interface EnclosureComponentSnapshot {
+  panelEnclosureComponentId: number;
+  enclosureComponentId?: number | null;
+  reference?: string | null;
+  description: string;
+  brand?: string | null;
+  quantity: number;
+  unitPriceList: number;
+  totalPriceList: number;
+  qty: number;
+  notesName?: string | null;
+}
+
+export interface PanelEnclosure {
+  panelEnclosureId: number;
+  panelItemId: number;
+  isCustom: boolean;
+  totalPrice: number;
+  components: EnclosureComponentSnapshot[];
+}
+
+export interface CreateCustomEnclosureRequest {
+  panelId: number;
+  panelItemId?: number | null;
+  components: EnclosureComponentSnapshot[];
+}
+
+export interface UpdateCustomEnclosureRequest {
+  isCustom: boolean;
+  components: EnclosureComponentSnapshot[];
+}
+
+export interface CustomEnclosureState {
+  panelId: number;
+  panelItemId?: number | null;
+  components: EnclosureComponentSnapshot[];
+  totalPrice: number;
+  isDirty: boolean;
+}
+
+export type EnclosureMode = 'ready' | 'custom' | null;
+
+// =====================
 // Busbar & Cables Worksheet
 // =====================
 

@@ -34,6 +34,7 @@ import {
   ConfirmDialog,
   CollaboratorModal,
 } from '../../components';
+import { useEnclosureManager } from '../../components/enclosures';
 import { useAuth } from '../../contexts';
 import {
   useProject,
@@ -142,6 +143,9 @@ export const PanelDesignerPage: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
   const [busbarWorksheetOpen, setBusbarWorksheetOpen] = useState(false);
+
+  // Enclosure manager
+  const { openEnclosureManager } = useEnclosureManager();
 
   // Data fetching
   const { data: project, isLoading: projectLoading } = useProject(parsedProjectId);
@@ -397,6 +401,13 @@ export const PanelDesignerPage: React.FC = () => {
   // Open material selection modal for a specific zone
   const handleOpenAddItems = (zone: ZoneType) => {
     if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    // For enclosure items, open the enclosure manager instead of material selection
+    if (zone === 'enclosure') {
+      const existingEnclosure = panelDetail?.enclosureItems?.[0];
+      openEnclosureManager(selectedPanelId, existingEnclosure?.panelItemId);
       return;
     }
 

@@ -7,6 +7,7 @@ import { theme } from './theme';
 import { AppRouter } from './router';
 import { ErrorBoundary } from './components';
 import { AuthProvider } from './contexts/AuthContext';
+import { EnclosureProvider } from './components/enclosures';
 import { CACHE_CONFIG, TOAST_CONFIG } from './constants';
 
 /**
@@ -66,7 +67,9 @@ const App: React.FC = () => {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
-            <AppRouter />
+            <EnclosureProvider>
+              <AppRouter />
+            </EnclosureProvider>
           </AuthProvider>
           <Toaster {...toasterConfig} />
         </ThemeProvider>
