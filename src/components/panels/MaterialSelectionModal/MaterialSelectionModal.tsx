@@ -243,9 +243,9 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
           justifyContent: 'space-between',
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AddIcon sx={{ color: zoneColor }} />
-          <Typography variant="h6" fontWeight={600}>
+          <Typography variant="subtitle1" fontWeight={600}>
             {title}
           </Typography>
         </Box>
@@ -457,6 +457,7 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
                             </Box>
                           </Box>
                         }
+                        secondaryTypographyProps={{ component: 'div' }}
                       />
 
                       {isSelected && (
@@ -561,6 +562,7 @@ export const MaterialSelectionModal: React.FC<MaterialSelectionModalProps> = ({
                           </Box>
                         </Box>
                       }
+                      secondaryTypographyProps={{ component: 'div' }}
                     />
 
                     {/* Quantity control (only shown when selected) */}

@@ -135,7 +135,7 @@ export const ReadyEnclosurePicker: React.FC<ReadyEnclosurePickerProps> = ({
       }}
     >
       <DialogTitle sx={{ bgcolor: '#f5f5f5', borderBottom: '1px solid #e0e0e0' }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           Select Ready Enclosure
         </Typography>
         <Typography variant="body2" color="text.secondary">

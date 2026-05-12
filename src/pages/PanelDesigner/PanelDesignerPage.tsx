@@ -6,6 +6,10 @@ import {
   Grid,
   Paper,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Tabs,
   Tab,
   IconButton,
@@ -27,6 +31,7 @@ import {
   Button,
   Loading,
   ItemTypeZone,
+  ZoneItem,
   getZoneConfig,
   MaterialSelectionModal,
   EntityStatusBadge,
@@ -143,6 +148,7 @@ export const PanelDesignerPage: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [isCollaboratorModalOpen, setIsCollaboratorModalOpen] = useState(false);
   const [busbarWorksheetOpen, setBusbarWorksheetOpen] = useState(false);
+  const [busbarActionChoiceOpen, setBusbarActionChoiceOpen] = useState(false);
 
   // Enclosure manager
   const { openEnclosureManager } = useEnclosureManager();
@@ -421,6 +427,23 @@ export const PanelDesignerPage: React.FC = () => {
     }
 
     setBusbarWorksheetOpen(true);
+  };
+
+  const handleOpenBusbarMaterialSelector = () => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    setActiveZone('busbarAndCables');
+    setSelectionModalOpen(true);
+  };
+
+  const handleOpenBusbarActionChoice = () => {
+    if (!ensurePanelUnlocked()) {
+      return;
+    }
+
+    setBusbarActionChoiceOpen(true);
   };
 
   // Add selected materials to the active zone
@@ -997,20 +1020,34 @@ export const PanelDesignerPage: React.FC = () => {
               onPackageItemQuantityChange={canEditPanel ? handlePackageItemQuantityChange : undefined}
               onPackageQuantityChange={canEditPanel ? handlePackageQuantityChange : undefined}
               onPackageRemove={canEditPanel ? handleRemovePackage : undefined}
-              onAddItems={canEditPanel && !isProjectLocked ? handleOpenBusbarWorksheet : undefined}
-              addButtonLabel={zones.busbarAndCables.length > 0 ? 'Edit Worksheet' : 'Open Worksheet'}
-              emptyStateLabel={zones.busbarAndCables.length > 0 ? 'Open the worksheet to edit it' : 'Click to open worksheet'}
-              renderItem={(item) => (
-                <Suspense fallback={<Box sx={{ py: 2 }}>Loading worksheet...</Box>}>
-                  <BusbarCablesWorksheetCard
+              onAddItems={canEditPanel && !isProjectLocked ? handleOpenBusbarActionChoice : undefined}
+              addButtonLabel={zones.busbarAndCables.length > 0 ? 'Busbar Actions' : 'Busbar Actions'}
+              emptyStateLabel={zones.busbarAndCables.length > 0 ? 'Open the worksheet or add materials' : 'Click to choose worksheet or materials'}
+              renderItem={(item) => {
+                const isWorksheetItem = item.itemCode === 'SYS-BUSBAR-CABLES' || item.panelItemId === busbarWorksheet?.panelItemId;
+                if (isWorksheetItem) {
+                  return (
+                    <Suspense fallback={<Box sx={{ py: 2 }}>Loading worksheet...</Box>}>
+                      <BusbarCablesWorksheetCard
+                        item={item}
+                        worksheet={busbarWorksheet ?? null}
+                        currency={project?.currency || 'EGP'}
+                        onEdit={handleOpenBusbarWorksheet}
+                        onDelete={() => handleRemoveItem(item.panelItemId)}
+                      />
+                    </Suspense>
+                  );
+                }
+
+                return (
+                  <ZoneItem
                     item={item}
-                    worksheet={busbarWorksheet ?? null}
-                    currency={project?.currency || 'EGP'}
-                    onEdit={handleOpenBusbarWorksheet}
-                    onDelete={() => handleRemoveItem(item.panelItemId)}
+                    onRemove={() => handleRemoveItem(item.panelItemId)}
+                    onQuantityChange={(qty) => handleQuantityChange(item.panelItemId, qty)}
+                    onOverrideChange={handleOverrideChange}
                   />
-                </Suspense>
-              )}
+                );
+              }}
             />
           </Grid>
         </Grid>
@@ -1035,6 +1072,35 @@ export const PanelDesignerPage: React.FC = () => {
           loading={addMaterialMutation.isPending}
         />
       )}
+
+      <Dialog open={busbarActionChoiceOpen} onClose={() => setBusbarActionChoiceOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Busbar &amp; Cables</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            Choose whether you want to open the worksheet or select a material.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setBusbarActionChoiceOpen(false);
+              handleOpenBusbarMaterialSelector();
+            }}
+          >
+            Select Material
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setBusbarActionChoiceOpen(false);
+              handleOpenBusbarWorksheet();
+            }}
+          >
+            Open Worksheet
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {busbarWorksheetOpen && (
         <Suspense fallback={<Loading fullScreen message="Loading worksheet editor..." />}>

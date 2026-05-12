@@ -16,6 +16,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import { PageHeader, Button } from '../../components';
+import { EnclosureCategoriesControl } from '../../components/materials';
 import { useAuth } from '../../contexts';
 import toast from 'react-hot-toast';
 
@@ -312,6 +313,13 @@ export const SettingsPage: React.FC = () => {
               multiline
               rows={8}
             />
+          </Paper>
+        </Grid>
+
+        {/* Enclosure Categories */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: { xs: 2, sm: 3 } }}>
+            <EnclosureCategoriesControl />
           </Paper>
         </Grid>
       </Grid>

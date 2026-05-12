@@ -87,6 +87,7 @@ export const BusbarCablesWorksheetCard: React.FC<BusbarCablesWorksheetCardProps>
   onEdit,
   onDelete,
 }) => {
+  // No system material selector here — worksheet is a single panel item.
   const payload = worksheet ?? safeParseWorksheet(item.notes);
   const result = payload?.result;
   const pricing = payload?.pricing;
@@ -188,7 +189,8 @@ export const BusbarCablesWorksheetCard: React.FC<BusbarCablesWorksheetCardProps>
         <Typography variant="body2" color="text.secondary">
           {payload ? `Panel item #${payload.panelItemId}` : `Saved worksheet row #${item.panelItemId}`}
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {/* System material selector removed — add materials via zone Add/selector */}
           <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={onEdit}>
             Edit
           </Button>

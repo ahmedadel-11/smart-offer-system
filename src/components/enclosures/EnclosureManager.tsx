@@ -55,7 +55,7 @@ export const EnclosureManager: React.FC<EnclosureManagerProps> = ({
       setIsLoading(true);
 
       // Create panel item with the selected ready enclosure material
-      const panelItem = await panelItemService.createPanelItem({
+      const panelItem = await panelItemService.create({
         panelId,
         materialId: material.materialId,
         quantity: 1,

@@ -121,6 +121,31 @@ export const materialService = {
       return true;
     });
   },
+
+  // Get available categories (from Materials table)
+  async getAvailableCategories(): Promise<string[]> {
+    const response = await apiClient.get<string[]>(`${ENDPOINT}/available-categories`);
+    return response.data;
+  },
+
+  // Get enclosure mapped categories
+  async getEnclosureCategories(): Promise<Array<{ enclosureCategoryMappingId: number; categoryName: string }>> {
+    const response = await apiClient.get(`${ENDPOINT}/enclosure-categories`);
+    return response.data;
+  },
+
+  // Add category to enclosure mapping
+  async addEnclosureCategory(categoryName: string): Promise<{ enclosureCategoryMappingId: number; categoryName: string }> {
+    const response = await apiClient.post(`${ENDPOINT}/enclosure-categories`, {
+      categoryName,
+    });
+    return response.data;
+  },
+
+  // Remove category from enclosure mapping
+  async removeEnclosureCategory(mappingId: number): Promise<void> {
+    await apiClient.delete(`${ENDPOINT}/enclosure-categories/${mappingId}`);
+  },
 };
 
 export default materialService;
